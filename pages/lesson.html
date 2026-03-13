@@ -361,36 +361,77 @@ a{color:inherit;text-decoration:none}
         </div>
       </div>
     </aside>
-    <div class="lb">
-      <div class="lbr" id="lbread">WEB DEVELOPMENT → MODULE 1</div>
+    <aside class="lsb">
+      <div class="lsh">
+        <div class="lsc" id="lcname">🌐 Website Development</div>
+        <div class="lsp"><span id="lpt">0% complete</span></div>
+        <div class="pt" style="margin-top:8px"><div class="pf2" id="lpf" style="width:0%"></div></div>
+      </div>
+      <!-- MODULE 1 -->
+      <div class="mg">
+        <div class="mt op"><span>Module 1: HTML Fundamentals</span><span class="mta">›</span></div>
+        <div class="ml op">
+          <div class="lr on" data-mod="m1" data-lid="l1" onclick="loadLesson('m1','l1')"><span class="ld"></span>What is HTML?</div>
+          <div class="lr" data-mod="m1" data-lid="l2" onclick="loadLesson('m1','l2')"><span class="ld"></span>Document Structure</div>
+          <div class="lr" data-mod="m1" data-lid="l3" onclick="loadLesson('m1','l3')"><span class="ld"></span>Tags &amp; Elements</div>
+          <div class="lr" data-mod="m1" data-lid="l4" onclick="loadLesson('m1','l4')"><span class="ld"></span>Headings, Text &amp; Lists</div>
+          <div class="lr" data-mod="m1" data-lid="l5" onclick="loadLesson('m1','l5')"><span class="ld"></span>Links &amp; Images</div>
+        </div>
+      </div>
+      <!-- MODULE 2 -->
+      <div class="mg">
+        <div class="mt"><span>Module 2: CSS Styling</span><span class="mta">›</span></div>
+        <div class="ml">
+          <div class="lr" data-mod="m2" data-lid="l1" onclick="loadLesson('m2','l1')"><span class="ld"></span>Introduction to CSS</div>
+          <div class="lr" data-mod="m2" data-lid="l2" onclick="loadLesson('m2','l2')"><span class="ld"></span>Selectors &amp; Properties</div>
+          <div class="lr" data-mod="m2" data-lid="l3" onclick="loadLesson('m2','l3')"><span class="ld"></span>Box Model &amp; Spacing</div>
+          <div class="lr" data-mod="m2" data-lid="l4" onclick="loadLesson('m2','l4')"><span class="ld"></span>Flexbox Layout</div>
+          <div class="lr" data-mod="m2" data-lid="l5" onclick="loadLesson('m2','l5')"><span class="ld"></span>Responsive Design</div>
+        </div>
+      </div>
+      <!-- MODULE 3 -->
+      <div class="mg">
+        <div class="mt"><span>Module 3: JavaScript Basics</span><span class="mta">›</span></div>
+        <div class="ml">
+          <div class="lr" data-mod="m3" data-lid="l1" onclick="loadLesson('m3','l1')"><span class="ld"></span>What is JavaScript?</div>
+          <div class="lr" data-mod="m3" data-lid="l2" onclick="loadLesson('m3','l2')"><span class="ld"></span>Variables &amp; Functions</div>
+          <div class="lr" data-mod="m3" data-lid="l3" onclick="loadLesson('m3','l3')"><span class="ld"></span>DOM Manipulation</div>
+        </div>
+      </div>
+    </aside>
+<div class="lb" id="lb">
+      <div class="lbr" id="lbread">WEB DEVELOPMENT → MODULE 1 → LESSON 1</div>
       <h1 id="lh1">What is HTML?</h1>
       <div class="lp" id="lprose">
-        <p>HTML — <strong>HyperText Markup Language</strong> — is the foundation of every website. It's the structure every browser reads to display a page.</p>
+        <p>HTML — <strong>HyperText Markup Language</strong> — is the skeleton of every website. Browsers read it to decide what to display.</p>
         <h2>Your First Tags</h2>
-        <pre><code>&lt;h1&gt;Hello, World!&lt;/h1&gt;
+        <pre><code>&lt;h1&gt;Hello World&lt;/h1&gt;
 &lt;p&gt;This is a paragraph.&lt;/p&gt;
 &lt;a href="https://fmm.com"&gt;Visit FMM&lt;/a&gt;
 &lt;img src="photo.jpg" alt="Description"&gt;</code></pre>
-        <h2>The 3-Layer Web</h2>
+        <h2>The 3 Layers of the Web</h2>
         <p>🌐 <strong>HTML</strong> — Structure &nbsp;|&nbsp; 🎨 <strong>CSS</strong> — Style &nbsp;|&nbsp; ⚡ <strong>JavaScript</strong> — Behaviour</p>
-        <p>Master all three and you can build anything on the web. This course takes you through all three layers step by step.</p>
+        <p>Every website ever built uses all three. This course takes you through each one step by step.</p>
       </div>
       <div class="nb">
-        <div class="nh"><span style="font-size:1.1rem">📌</span><span class="nl2">Instructor Notes</span><span class="nt" id="nts"></span></div>
+        <div class="nh">
+          <span style="font-size:1.1rem">📌</span>
+          <span class="nl2">Instructor Notes</span>
+          <span class="nt" id="nts"></span>
+        </div>
         <div class="nc" id="ncontent"><p>Loading instructor notes...</p></div>
       </div>
-      <div style="margin-top:52px">
-        <p style="color:var(--txtm);font-size:.87rem;margin-bottom:20px;font-family:'JetBrains Mono',monospace">// Complete the quiz to unlock the next lesson — 70% to pass</p>
+      <div style="margin-top:44px">
+        <p style="color:var(--txtm);font-size:.87rem;margin-bottom:20px;font-family:'JetBrains Mono',monospace">// Complete the quiz below — need 70% to pass and unlock next lesson</p>
         <div class="qw" id="qbox"></div>
       </div>
       <div class="lnav">
-        <button class="btn bg" onclick="history.back()">← Previous</button>
-        <button class="btn bp" onclick="fmmComplete()">Mark Complete <span class="ar">→</span></button>
+        <button class="btn bg" id="btn-prev" onclick="goPrev()">← Previous</button>
+        <button class="btn bp" id="btn-next" onclick="goNext()" style="display:none">Next Lesson <span class="ar">→</span></button>
       </div>
     </div>
   </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 
@@ -585,63 +626,396 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 </script>
 <script>
-const LESSONS = {
-  m1:{
-    l1:{title:'What is HTML?',bc:'WEB DEVELOPMENT → MODULE 1',body:`<p>HTML — <strong>HyperText Markup Language</strong> — is the foundation of every website on the internet.</p><h2>Your First Tags</h2><pre><code>&lt;h1&gt;Hello World&lt;/h1&gt;
+// ── LESSON CURRICULUM ────────────────────────────────────────
+// Each entry: [moduleId, lessonId, title, breadcrumb, content]
+const CURRICULUM = [
+  // MODULE 1 — HTML
+  ['m1','l1','What is HTML?','WEB DEVELOPMENT › MOD 1 › L1',
+    `<p>HTML — <strong>HyperText Markup Language</strong> — is the skeleton of every website. Browsers read it top to bottom to decide what to display on screen.</p>
+    <h2>Your First Tags</h2>
+    <pre><code>&lt;h1&gt;Hello World&lt;/h1&gt;
 &lt;p&gt;This is a paragraph.&lt;/p&gt;
-&lt;a href="https://fmm.com"&gt;Visit FMM&lt;/a&gt;</code></pre><h2>Remember</h2><p>HTML = Structure. CSS = Style. JS = Behaviour.</p>`},
-    l2:{title:'HTML Document Structure',bc:'WEB DEVELOPMENT → MODULE 1',body:`<p>Every HTML file follows the same mandatory structure. Missing any part can break how the browser reads your page.</p><pre><code>&lt;!DOCTYPE html&gt;
+&lt;a href="https://fmm.com"&gt;Click here&lt;/a&gt;
+&lt;img src="photo.jpg" alt="My photo"&gt;</code></pre>
+    <h2>The 3 Layers of the Web</h2>
+    <p>🌐 <strong>HTML</strong> — Structure &nbsp;|&nbsp; 🎨 <strong>CSS</strong> — Style &nbsp;|&nbsp; ⚡ <strong>JS</strong> — Behaviour</p>
+    <p>Master all three and you can build anything. This course covers all three, step by step.</p>`],
+
+  ['m1','l2','HTML Document Structure','WEB DEVELOPMENT › MOD 1 › L2',
+    `<p>Every HTML file must follow this exact structure or browsers will not read it correctly.</p>
+    <pre><code>&lt;!DOCTYPE html&gt;
 &lt;html lang="en"&gt;
   &lt;head&gt;
     &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
     &lt;title&gt;My Page&lt;/title&gt;
   &lt;/head&gt;
   &lt;body&gt;
-    &lt;h1&gt;Visible content here&lt;/h1&gt;
+    &lt;h1&gt;This is visible&lt;/h1&gt;
+    &lt;p&gt;Everything visible goes here.&lt;/p&gt;
   &lt;/body&gt;
-&lt;/html&gt;</code></pre>`}
-  },
-  m2:{
-    l1:{title:'Introduction to CSS',bc:'WEB DEVELOPMENT → MODULE 2',body:`<p>CSS — <strong>Cascading Style Sheets</strong> — controls how HTML elements look on screen.</p><pre><code>h1 { color: #2979ff; font-size: 2rem; }
-p  { color: #8baad4; line-height: 1.6; }</code></pre>`}
-  }
-};
-const QUIZZES = {
-  m1:[
+&lt;/html&gt;</code></pre>
+    <h2>Key Points</h2>
+    <p><code>&lt;head&gt;</code> holds metadata — not visible on screen. <code>&lt;body&gt;</code> holds everything the user sees.</p>`],
+
+  ['m1','l3','Tags & Elements','WEB DEVELOPMENT › MOD 1 › L3',
+    `<p>HTML uses <strong>tags</strong> to wrap content. Most tags come in pairs — an opening tag and a closing tag.</p>
+    <pre><code>&lt;p&gt;This is a paragraph&lt;/p&gt;
+&lt;strong&gt;Bold text&lt;/strong&gt;
+&lt;em&gt;Italic text&lt;/em&gt;
+&lt;br&gt;          &lt;!-- self-closing, no end tag --&gt;
+&lt;hr&gt;          &lt;!-- horizontal rule --&gt;</code></pre>
+    <h2>Block vs Inline</h2>
+    <p><strong>Block elements</strong> (div, p, h1-h6) take up the full width. <strong>Inline elements</strong> (span, a, strong, em) sit inside text.</p>`],
+
+  ['m1','l4','Headings, Text & Lists','WEB DEVELOPMENT › MOD 1 › L4',
+    `<h2>Headings</h2>
+    <pre><code>&lt;h1&gt;Biggest heading&lt;/h1&gt;
+&lt;h2&gt;Section heading&lt;/h2&gt;
+&lt;h3&gt;Sub-section&lt;/h3&gt;
+&lt;h4&gt;Smaller still&lt;/h4&gt;</code></pre>
+    <h2>Lists</h2>
+    <pre><code>&lt;!-- Unordered (bullet points) --&gt;
+&lt;ul&gt;
+  &lt;li&gt;HTML&lt;/li&gt;
+  &lt;li&gt;CSS&lt;/li&gt;
+  &lt;li&gt;JavaScript&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;!-- Ordered (numbered) --&gt;
+&lt;ol&gt;
+  &lt;li&gt;Step one&lt;/li&gt;
+  &lt;li&gt;Step two&lt;/li&gt;
+&lt;/ol&gt;</code></pre>`],
+
+  ['m1','l5','Links & Images','WEB DEVELOPMENT › MOD 1 › L5',
+    `<h2>Links</h2>
+    <pre><code>&lt;!-- External link --&gt;
+&lt;a href="https://google.com" target="_blank"&gt;Open Google&lt;/a&gt;
+
+&lt;!-- Internal link --&gt;
+&lt;a href="about.html"&gt;About page&lt;/a&gt;
+
+&lt;!-- Email link --&gt;
+&lt;a href="mailto:hello@fmm.com"&gt;Email us&lt;/a&gt;</code></pre>
+    <h2>Images</h2>
+    <pre><code>&lt;img src="photo.jpg" alt="Description of image" width="400"&gt;
+&lt;img src="https://example.com/img.png" alt="Remote image"&gt;</code></pre>
+    <p><strong>Always</strong> add an <code>alt</code> attribute — it improves accessibility and SEO.</p>`],
+
+  // MODULE 2 — CSS
+  ['m2','l1','Introduction to CSS','WEB DEVELOPMENT › MOD 2 › L1',
+    `<p>CSS — <strong>Cascading Style Sheets</strong> — controls how your HTML looks. Without CSS every site is plain black text on a white page.</p>
+    <h2>Three Ways to Add CSS</h2>
+    <pre><code>&lt;!-- 1. External file (best practice) --&gt;
+&lt;link rel="stylesheet" href="style.css"&gt;
+
+&lt;!-- 2. Inside &lt;style&gt; tag in &lt;head&gt; --&gt;
+&lt;style&gt;
+  h1 { color: blue; }
+&lt;/style&gt;
+
+&lt;!-- 3. Inline (avoid for large projects) --&gt;
+&lt;h1 style="color: blue;"&gt;Heading&lt;/h1&gt;</code></pre>`],
+
+  ['m2','l2','Selectors & Properties','WEB DEVELOPMENT › MOD 2 › L2',
+    `<h2>CSS Syntax</h2>
+    <pre><code>selector {
+  property: value;
+  property: value;
+}</code></pre>
+    <h2>Common Selectors</h2>
+    <pre><code>h1       { color: red; }        /* element */
+.card    { padding: 20px; }     /* class */
+#logo    { width: 120px; }      /* id */
+a:hover  { color: blue; }       /* pseudo-class */
+p, li    { line-height: 1.6; }  /* multiple */</code></pre>`],
+
+  ['m2','l3','Box Model & Spacing','WEB DEVELOPMENT › MOD 2 › L3',
+    `<p>Every HTML element is a box. Understanding this box is the key to controlling layout.</p>
+    <pre><code>┌─────────────────────────────┐
+│           MARGIN            │  ← space outside
+│  ┌───────────────────────┐  │
+│  │        BORDER         │  │  ← visible border
+│  │  ┌─────────────────┐  │  │
+│  │  │    PADDING      │  │  │  ← space inside
+│  │  │  ┌───────────┐  │  │  │
+│  │  │  │  CONTENT  │  │  │  │
+│  │  │  └───────────┘  │  │  │
+│  │  └─────────────────┘  │  │
+│  └───────────────────────┘  │
+└─────────────────────────────┘</code></pre>
+    <pre><code>.box {
+  margin: 20px;        /* outside space */
+  padding: 16px;       /* inside space */
+  border: 2px solid #2979ff;
+  width: 300px;
+  box-sizing: border-box; /* include padding in width */
+}</code></pre>`],
+
+  ['m2','l4','Flexbox Layout','WEB DEVELOPMENT › MOD 2 › L4',
+    `<p>Flexbox is the most powerful CSS tool for arranging elements in a row or column.</p>
+    <pre><code>.container {
+  display: flex;
+  justify-content: center;   /* horizontal alignment */
+  align-items: center;       /* vertical alignment */
+  gap: 20px;                 /* space between items */
+  flex-wrap: wrap;           /* wrap to next line */
+}
+
+.item {
+  flex: 1;      /* grow to fill space equally */
+}</code></pre>
+    <h2>Common Patterns</h2>
+    <pre><code>/* Center anything */
+.parent { display:flex; justify-content:center; align-items:center; }
+
+/* Nav bar */
+nav { display:flex; justify-content:space-between; align-items:center; }</code></pre>`],
+
+  ['m2','l5','Responsive Design','WEB DEVELOPMENT › MOD 2 › L5',
+    `<p>Responsive design means your site looks good on every screen size — phone, tablet, desktop.</p>
+    <h2>Media Queries</h2>
+    <pre><code>/* Mobile first — default styles */
+.grid { grid-template-columns: 1fr; }
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* Desktop and up */
+@media (min-width: 1024px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}</code></pre>
+    <h2>Always add this meta tag</h2>
+    <pre><code>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</code></pre>`],
+
+  // MODULE 3 — JavaScript
+  ['m3','l1','What is JavaScript?','WEB DEVELOPMENT › MOD 3 › L1',
+    `<p>JavaScript makes websites <strong>interactive</strong>. It runs in the browser and can change anything on the page in real time.</p>
+    <h2>Your First Script</h2>
+    <pre><code>&lt;script&gt;
+  alert('Hello from FMM!');
+  console.log('Check the browser console');
+
+  let name = 'Felix';
+  console.log('Welcome, ' + name);
+&lt;/script&gt;</code></pre>
+    <h2>Where to put it</h2>
+    <p>Always put your <code>&lt;script&gt;</code> tag just before the closing <code>&lt;/body&gt;</code> tag so it runs after the HTML loads.</p>`],
+
+  ['m3','l2','Variables & Functions','WEB DEVELOPMENT › MOD 3 › L2',
+    `<h2>Variables</h2>
+    <pre><code>let name = 'Felix';        // can change later
+const course = 'FMM';      // cannot change
+var old = 'avoid this';    // old style, avoid
+
+let age = 25;
+let isEnrolled = true;
+let nothing = null;</code></pre>
+    <h2>Functions</h2>
+    <pre><code>// Define
+function greet(name) {
+  return 'Hello, ' + name + '!';
+}
+
+// Call
+let msg = greet('Felix');
+console.log(msg);  // Hello, Felix!
+
+// Arrow function (modern style)
+const greet = (name) => 'Hello, ' + name + '!';</code></pre>`],
+
+  ['m3','l3','DOM Manipulation','WEB DEVELOPMENT › MOD 3 › L3',
+    `<p>The DOM (Document Object Model) lets JavaScript read and change your HTML in real time.</p>
+    <pre><code>// Select elements
+const title = document.getElementById('title');
+const buttons = document.querySelectorAll('.btn');
+
+// Change content
+title.textContent = 'New Title';
+title.innerHTML = '&lt;strong&gt;Bold Title&lt;/strong&gt;';
+
+// Change styles
+title.style.color = '#2979ff';
+title.style.fontSize = '2rem';
+
+// Add/remove classes
+title.classList.add('active');
+title.classList.remove('hidden');
+title.classList.toggle('visible');
+
+// Listen for clicks
+document.getElementById('btn').addEventListener('click', () => {
+  alert('Button clicked!');
+});</code></pre>`]
+];
+
+// ── QUIZ BANK ────────────────────────────────────────────────
+const QUIZBANK = {
+  m1: [
     {q:'What does HTML stand for?',opts:['HyperText Markup Language','High Text Making Language','HyperText Making Links','Hyper Transfer Markup Language'],ans:0},
     {q:'Which tag creates the largest heading?',opts:['&lt;heading&gt;','&lt;h6&gt;','&lt;h1&gt;','&lt;head&gt;'],ans:2},
-    {q:'What does the &lt;head&gt; section contain?',opts:['Visible page content','Page metadata &amp; links','Navigation menus','Footer info'],ans:1},
+    {q:'What does the &lt;head&gt; section contain?',opts:['Visible page content','Page metadata & links','Navigation menus','Footer info'],ans:1},
     {q:'How do you write an HTML comment?',opts:['// comment','/* comment */','&lt;!-- comment --&gt;','# comment'],ans:2},
-    {q:'Which is a correctly closed HTML tag?',opts:['&lt;p&gt;Text&lt;p&gt;','&lt;p&gt;Text','&lt;p&gt;Text&lt;/p&gt;','[p]Text[/p]'],ans:2}
+    {q:'Which tag is self-closing (no end tag needed)?',opts:['&lt;p&gt;','&lt;div&gt;','&lt;img&gt;','&lt;h1&gt;'],ans:2}
   ],
-  m2:[
+  m2: [
     {q:'What does CSS stand for?',opts:['Cascading Style Sheets','Computer Style Syntax','Creative Styling System','Cascading Syntax Sheets'],ans:0},
     {q:'Which CSS property changes text color?',opts:['font-color','text-color','color','foreground'],ans:2},
-    {q:'How do you center flex items horizontally?',opts:['align-items:center','justify-content:center','text-align:center','margin:auto'],ans:1}
+    {q:'How do you center flex items horizontally?',opts:['align-items:center','justify-content:center','text-align:center','margin:auto'],ans:1},
+    {q:'Which property adds space INSIDE an element?',opts:['margin','border','padding','gap'],ans:2},
+    {q:'What does "responsive design" mean?',opts:['Fast loading','Looks good on all screen sizes','Has animations','Uses JavaScript'],ans:1}
+  ],
+  m3: [
+    {q:'Which keyword declares a variable that cannot change?',opts:['let','var','const','static'],ans:2},
+    {q:'How do you select an element by ID in JavaScript?',opts:['document.getClass()','document.querySelector()','document.getElementById()','document.find()'],ans:2},
+    {q:'What does DOM stand for?',opts:['Document Object Model','Data Object Method','Display Object Mode','Document Output Manager'],ans:0},
+    {q:'Which method adds a click event listener?',opts:['onclick()','addEvent()','addEventListener()','listenFor()'],ans:2},
+    {q:'What does console.log() do?',opts:['Shows an alert box','Prints to browser console','Writes to the page','Sends data to server'],ans:1}
   ]
 };
-let CC='web-dev',CM='m1',CL='l1';
-function loadLesson(mod,lesson,title){
-  CM=mod;CL=lesson;
-  document.querySelectorAll('.lr').forEach(r=>r.classList.remove('on'));
-  event?.target?.closest('.lr')?.classList.add('on');
-  document.getElementById('lh1').textContent=title;
-  const data=LESSONS[mod]?.[lesson];
-  if(data){document.getElementById('lprose').innerHTML=data.body;document.getElementById('lbread').textContent=data.bc;}
-  const quiz=QUIZZES[mod]||QUIZZES['m1'];
-  initQuiz(quiz,'qbox');
-  loadNotes(CC+'-'+mod+'-'+lesson);
+
+// ── STATE ────────────────────────────────────────────────────
+let CC = 'web-dev';   // current course
+let CI = 0;           // current lesson index in CURRICULUM
+let lessonUnlocked = false;
+
+// ── FLAT LESSON LIST ─────────────────────────────────────────
+// Build ordered list of all lessons for prev/next navigation
+function getLessons() { return CURRICULUM; }
+
+// ── RENDER LESSON ────────────────────────────────────────────
+function renderLesson(idx) {
+  if (idx < 0 || idx >= CURRICULUM.length) return;
+  CI = idx;
+  const [mod, lid, title, bc, body] = CURRICULUM[idx];
+  lessonUnlocked = false;
+
+  // Update content
+  document.getElementById('lh1').textContent = title;
+  document.getElementById('lbread').textContent = bc;
+  document.getElementById('lprose').innerHTML = body;
+  document.getElementById('ncontent').innerHTML = '<p>Loading instructor notes...</p>';
+  document.getElementById('nts').textContent = '';
+
+  // Update sidebar highlight
+  document.querySelectorAll('.lr').forEach(r => r.classList.remove('on'));
+  const target = document.querySelector(`.lr[data-mod="${mod}"][data-lid="${lid}"]`);
+  if (target) {
+    target.classList.add('on');
+    // Open correct module accordion
+    const modGroup = target.closest('.mg');
+    if (modGroup) {
+      document.querySelectorAll('.ml').forEach(l => l.classList.remove('op'));
+      document.querySelectorAll('.mt').forEach(t => t.classList.remove('op'));
+      const tog = modGroup.querySelector('.mt');
+      const list = modGroup.querySelector('.ml');
+      if (tog) tog.classList.add('op');
+      if (list) list.classList.add('op');
+    }
+  }
+
+  // Update prev/next buttons
+  const prev = document.getElementById('btn-prev');
+  const next = document.getElementById('btn-next');
+  prev.style.display = idx === 0 ? 'none' : 'inline-flex';
+  next.style.display = 'none'; // hidden until quiz passed
+
+  // Check if already completed
+  const p = getP();
+  const done = (p[CC]?.[mod] || []).includes(lid);
+  if (done) {
+    lessonUnlocked = true;
+    next.style.display = idx < CURRICULUM.length - 1 ? 'inline-flex' : 'none';
+    next.textContent = ''; 
+    next.innerHTML = 'Next Lesson <span class="ar">→</span>';
+  }
+
+  // Load quiz for this module
+  const quiz = QUIZBANK[mod] || QUIZBANK['m1'];
+  initQuiz(quiz, 'qbox');
+
+  // Load notes
+  loadNotes(CC + '-' + mod + '-' + lid);
+
+  // Update progress bar
   updateLsbPct(CC);
-  window.scrollTo({top:70,behavior:'smooth'});
+
+  // Scroll to top of content
+  window.scrollTo({ top: 70, behavior: 'smooth' });
 }
-document.addEventListener('DOMContentLoaded',()=>{
-  const p=new URLSearchParams(location.search);
-  CC=p.get('course')||'web-dev';
-  const names={'web-dev':'🌐 Website Development','wordpress':'🔷 WordPress Design','seo':'🔍 SEO Mastery','hosting':'🖥️ Hosting &amp; Maintenance','ecommerce':'🛒 E-Commerce'};
-  const n=document.getElementById('lcname');if(n)n.textContent=names[CC]||'🌐 Website Development';
-  initQuiz(QUIZZES['m1'],'qbox');
-  loadNotes(CC+'-m1-l1');
+
+// ── NAVIGATION ───────────────────────────────────────────────
+function goNext() {
+  if (CI < CURRICULUM.length - 1) renderLesson(CI + 1);
+}
+
+function goPrev() {
+  if (CI > 0) renderLesson(CI - 1);
+}
+
+// ── OVERRIDE fmmComplete ─────────────────────────────────────
+function fmmComplete() {
+  const [mod, lid] = CURRICULUM[CI];
+  const v = markDone(CC, mod, lid);
+  lessonUnlocked = true;
+
+  // Show next button
+  const next = document.getElementById('btn-next');
+  if (CI < CURRICULUM.length - 1) {
+    next.style.display = 'inline-flex';
+    next.innerHTML = 'Next Lesson <span class="ar">→</span>';
+  }
+
+  // Mark sidebar row as done
+  const row = document.querySelector(`.lr[data-mod="${mod}"][data-lid="${lid}"]`);
+  if (row) {
+    row.classList.add('dn');
+    const dot = row.querySelector('.ld');
+    if (dot) dot.textContent = '✓';
+  }
+
+  // Update progress bar
   updateLsbPct(CC);
+  renderProgress();
+
+  // Toast
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:32px;right:32px;background:linear-gradient(135deg,#1557e8,#2979ff);color:#fff;padding:14px 24px;border-radius:100px;font-weight:700;font-family:"JetBrains Mono",monospace;font-size:.84rem;box-shadow:0 8px 32px rgba(41,121,255,.5);z-index:9999;animation:fadeUp .3s ease';
+  t.textContent = '✅ Lesson complete! Course: ' + v + '%';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+
+  // Auto-advance after 1.5s
+  setTimeout(() => {
+    if (CI < CURRICULUM.length - 1) goNext();
+  }, 1500);
+}
+
+// ── SIDEBAR CLICK ────────────────────────────────────────────
+function loadLesson(mod, lid) {
+  const idx = CURRICULUM.findIndex(l => l[0] === mod && l[1] === lid);
+  if (idx !== -1) renderLesson(idx);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const p = new URLSearchParams(location.search);
+  CC = p.get('course') || 'web-dev';
+
+  const names = {
+    'web-dev': '🌐 Website Development',
+    'wordpress': '🔷 WordPress Design',
+    'seo': '🔍 SEO Mastery',
+    'hosting': '🖥️ Hosting & Maintenance',
+    'ecommerce': '🛒 E-Commerce'
+  };
+  const n = document.getElementById('lcname');
+  if (n) n.innerHTML = names[CC] || '🌐 Website Development';
+
+  renderLesson(0);
 });
 </script>
 </body></html>
