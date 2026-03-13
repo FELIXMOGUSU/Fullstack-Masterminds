@@ -318,6 +318,8 @@ a{color:inherit;text-decoration:none}
 }
 
 
+.lr-locked { opacity: 0.45; cursor: not-allowed !important; }
+.lr-locked:hover { background: transparent !important; }
 /* ── INTEGRATED LESSON NOTES ───────────────────────── */
 .note-section { background: rgba(41,121,255,0.06); border-left: 3px solid var(--blue); border-radius: 0 8px 8px 0; padding: 24px 28px; margin-top: 8px; }
 .note-section h3 { font-family: var(--fbody); font-size: 1rem; color: var(--acc); margin-bottom: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
@@ -468,6 +470,22 @@ async function syncP(d){if(!sb)return;try{const{data:{user}}=await sb.auth.getUs
 async function loadP(){if(!sb)return;try{const{data:{user}}=await sb.auth.getUser();if(!user)return;const{data}=await sb.from('user_progress_summary').select('progress_data').eq('user_id',user.id).single();if(data?.progress_data)saveP(data.progress_data);}catch(e){}}
 
 function markDone(cid,mid,lid){const p=getP();if(!p[cid])p[cid]={};if(!p[cid][mid])p[cid][mid]=[];if(!p[cid][mid].includes(lid))p[cid][mid].push(lid);saveP(p);return getPct(cid);}
+function isLessonDone(cid, mod, lid) {
+  const p = getP();
+  return (p[cid]?.[mod] || []).includes(lid);
+}
+
+function showLockToast(msg) {
+  // Remove any existing toast
+  document.querySelectorAll('.fmm-lock-toast').forEach(t => t.remove());
+  const toast = document.createElement('div');
+  toast.className = 'fmm-lock-toast';
+  toast.style.cssText = 'position:fixed;bottom:32px;right:32px;background:linear-gradient(135deg,#c62828,#e53935);color:#fff;padding:14px 26px;border-radius:100px;font-weight:700;font-family:"JetBrains Mono",monospace;font-size:.84rem;box-shadow:0 8px 32px rgba(229,57,53,.5);z-index:9999;display:flex;align-items:center;gap:10px';
+  toast.innerHTML = '🔒 ' + (msg || 'Score 70% on the quiz to unlock the next lesson');
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+
 function getPct(cid){const p=getP(),done=Object.values(p[cid]||{}).flat().length;return Math.round((done/(TOTALS[cid]||1))*100);}
 function getOverall(){const tot=Object.values(TOTALS).reduce((a,b)=>a+b,0),done=Object.values(getP()).reduce((s,m)=>s+Object.values(m).flat().length,0);return Math.round((done/tot)*100);}
 function getTotalDone(){return Object.values(getP()).reduce((s,m)=>s+Object.values(m).flat().length,0);}
@@ -2509,8 +2527,8 @@ function renderLesson(idx) {
   prev.style.display = idx === 0 ? 'none' : 'inline-flex';
   next.style.display = 'none';
 
-  const p = getP();
-  if ((p[CC]?.[mod] || []).includes(lid) && idx < cur.length - 1) {
+  // Only reveal Next button if this lesson is already marked complete
+  if (isLessonDone(CC, mod, lid) && idx < cur.length - 1) {
     next.style.display = 'inline-flex';
     next.innerHTML = 'Next Lesson <span class="ar">→</span>';
   }
@@ -2521,7 +2539,16 @@ function renderLesson(idx) {
   window.scrollTo({ top: 70, behavior: 'smooth' });
 }
 
-function goNext() { if (CI < getCur().length - 1) renderLesson(CI + 1); }
+function goNext() {
+  const cur = getCur();
+  if (CI >= cur.length - 1) return;
+  const [mod, lid] = cur[CI];
+  if (!isLessonDone(CC, mod, lid)) {
+    showLockToast();
+    return;
+  }
+  renderLesson(CI + 1);
+}
 function goPrev() { if (CI > 0) renderLesson(CI - 1); }
 
 function fmmComplete() {
@@ -2550,8 +2577,18 @@ function fmmComplete() {
 }
 
 function loadLesson(mod, lid) {
-  const idx = getCur().findIndex(l => l[0] === mod && l[1] === lid);
-  if (idx !== -1) renderLesson(idx);
+  const cur = getCur();
+  const idx = cur.findIndex(l => l[0] === mod && l[1] === lid);
+  if (idx === -1) return;
+  // Lesson 0 always unlocked; others require the previous lesson to be done
+  if (idx > 0) {
+    const [prevMod, prevLid] = cur[idx - 1];
+    if (!isLessonDone(CC, prevMod, prevLid)) {
+      showLockToast();
+      return;
+    }
+  }
+  renderLesson(idx);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2582,7 +2619,17 @@ function buildSidebar() {
     <div class="mg">
       <div class="mt ${i===0?'op':''}"><span>${modId.toUpperCase()}: ${cmod[modId]||modId}</span><span class="mta">›</span></div>
       <div class="ml ${i===0?'op':''}">
-        ${lessons.map((l,j) => `<div class="lr ${i===0&&j===0?'on':''}" data-mod="${l.mod}" data-lid="${l.lid}" onclick="loadLesson('${l.mod}','${l.lid}')"><span class="ld"></span>${l.title}</div>`).join('')}
+        ${lessons.map((l,j) => {
+          const globalIdx = cur.findIndex(x => x[0]===l.mod && x[1]===l.lid);
+          const unlocked  = globalIdx === 0 || (() => {
+            const [pm,pl] = cur[globalIdx-1];
+            return isLessonDone(CC, pm, pl);
+          })();
+          const done = isLessonDone(CC, l.mod, l.lid);
+          return `<div class="lr ${i===0&&j===0?'on':''} ${!unlocked?'lr-locked':''}" data-mod="${l.mod}" data-lid="${l.lid}" onclick="loadLesson('${l.mod}','${l.lid}')">
+            <span class="ld">${done?'✓':(!unlocked?'🔒':'')}</span>${l.title}
+          </div>`;
+        }).join('')}
       </div>
     </div>`).join('');
 
