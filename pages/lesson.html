@@ -392,83 +392,27 @@ a{color:inherit;text-decoration:none}
       </div>
     </aside>
 <div class="lb" id="lb">
-      <div class="lbr" id="lbread">WEB DEVELOPMENT → MODULE 1 → LESSON 1</div>
-      <h1 id="lh1">What is HTML?</h1>
-      <div class="lp" id="lprose">
-        <p>HTML — <strong>HyperText Markup Language</strong> — is the skeleton of every website. Browsers read it to decide what to display.</p>
-        <h2>Your First Tags</h2>
-        <pre><code>&lt;h1&gt;Hello World&lt;/h1&gt;
-&lt;p&gt;This is a paragraph.&lt;/p&gt;
-&lt;a href="https://fmm.com"&gt;Visit FMM&lt;/a&gt;
-&lt;img src="photo.jpg" alt="Description"&gt;</code></pre>
-        <h2>The 3 Layers of the Web</h2>
-        <p>🌐 <strong>HTML</strong> — Structure &nbsp;|&nbsp; 🎨 <strong>CSS</strong> — Style &nbsp;|&nbsp; ⚡ <strong>JavaScript</strong> — Behaviour</p>
-        <p>Every website ever built uses all three. This course takes you through each one step by step.</p>
-      </div>
-      <div class="nb">
-        <div class="nh">
-          <span style="font-size:1.1rem">📌</span>
-          <span class="nl2">Instructor Notes</span>
-          <span class="nt" id="nts"></span>
-        </div>
-        <div class="nc" id="ncontent"><p>Loading instructor notes...</p></div>
-      </div>
-      <div style="margin-top:44px">
-        <p style="color:var(--txtm);font-size:.87rem;margin-bottom:20px;font-family:'JetBrains Mono',monospace">// Complete the quiz below — need 70% to pass and unlock next lesson</p>
-        <div class="qw" id="qbox"></div>
-      </div>
-      <div class="lnav">
-        <button class="btn bg" id="btn-prev" onclick="goPrev()">← Previous</button>
-        <button class="btn bp" id="btn-next" onclick="goNext()" style="display:none">Next Lesson <span class="ar">→</span></button>
-      </div>
+  <div class="lbr" id="lbread"></div>
+  <h1 id="lh1"></h1>
+  <div class="lp" id="lprose"></div>
+  <div class="nb" style="display:none">
+    <div class="nh">
+      <span style="font-size:1.1rem">📌</span>
+      <span class="nl2">Instructor Notes</span>
+      <span class="nt" id="nts"></span>
     </div>
+    <div class="nc" id="ncontent"></div>
+  </div>
+  <div style="margin-top:44px">
+    <p style="color:var(--txtm);font-size:.87rem;margin-bottom:20px;font-family:'JetBrains Mono',monospace">// Complete the quiz — 70% to pass and unlock the next lesson</p>
+    <div class="qw" id="qbox"></div>
+  </div>
+  <div class="lnav">
+    <button class="btn bg" id="btn-prev" onclick="goPrev()">← Previous</button>
+    <button class="btn bp" id="btn-next" onclick="goNext()" style="display:none">Next Lesson <span class="ar">→</span></button>
   </div>
 </div>
-<div class="lb" id="lb">
-      <div class="lbr" id="lbread">WEB DEVELOPMENT › MODULE 1 › L1</div>
-      <h1 id="lh1">Loading...</h1>
-      <div class="lp" id="lprose"><p>Loading lesson content...</p></div>
-      <div class="nb">
-        <div class="nh">
-          <span style="font-size:1.1rem">📌</span>
-          <span class="nl2">Instructor Notes</span>
-          <span class="nt" id="nts"></span>
-        </div>
-        <div class="nc" id="ncontent"><p>Loading...</p></div>
-      </div>
-      <div style="margin-top:44px">
-        <p style="color:var(--txtm);font-size:.87rem;margin-bottom:20px;font-family:'JetBrains Mono',monospace">// Complete the quiz below — need 70% to pass and unlock the next lesson</p>
-        <div class="qw" id="qbox"></div>
-      </div>
-      <div class="lnav">
-        <button class="btn bg" id="btn-prev" onclick="goPrev()">← Previous</button>
-        <button class="btn bp" id="btn-next" onclick="goNext()" style="display:none">Next Lesson <span class="ar">→</span></button>
-      </div>
-    </div>
-  </div>
 </div>
-<div class="lb" id="lb">
-      <div class="lbr" id="lbread">WEB DEVELOPMENT › MOD 1 › L1</div>
-      <h1 id="lh1">Loading...</h1>
-      <div class="lp" id="lprose"><p>Loading lesson content...</p></div>
-      <div class="nb">
-        <div class="nh">
-          <span style="font-size:1.1rem">📌</span>
-          <span class="nl2">Instructor Notes</span>
-          <span class="nt" id="nts"></span>
-        </div>
-        <div class="nc" id="ncontent"><p style="color:var(--txtm)">Loading notes...</p></div>
-      </div>
-      <div style="margin-top:44px">
-        <p style="color:var(--txtm);font-size:.87rem;margin-bottom:20px;font-family:'JetBrains Mono',monospace">// Complete the quiz — 70% to pass and unlock next lesson</p>
-        <div class="qw" id="qbox"></div>
-      </div>
-      <div class="lnav">
-        <button class="btn bg" id="btn-prev" onclick="goPrev()">← Previous</button>
-        <button class="btn bp" id="btn-next" onclick="goNext()" style="display:none">Next Lesson <span class="ar">→</span></button>
-      </div>
-    </div>
-  </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -641,14 +585,40 @@ function updateLsbPct(cid){
   const t=document.getElementById('lpt');if(t)t.textContent=v+'% complete';
 }
 
-async function loadNotes(lid){
-  const el=document.getElementById('ncontent'),ts=document.getElementById('nts');if(!el)return;
-  if(!sb){el.innerHTML='<p>Instructor notes will appear here once Supabase is connected.</p>';return;}
+async function loadNotes(lessonId, baseNotes){
+  // Always show the lesson's built-in notes first
+  const el  = document.getElementById('ncontent');
+  const ts  = document.getElementById('nts');
+  const nb  = document.querySelector('.nb');
+  if(!el) return;
+
+  // Inject built-in lesson notes from curriculum
+  if(baseNotes){
+    el.innerHTML = baseNotes;
+    if(nb) nb.style.display = 'block';
+  } else {
+    // No built-in notes — hide the section entirely
+    if(nb) nb.style.display = 'none';
+    return;
+  }
+
+  // If Supabase connected, check for ADDITIONAL instructor override notes
+  if(!sb) return; // No Supabase — just show built-in notes, done
   try{
-    const{data}=await sb.from('lesson_notes').select('content,updated_at').eq('lesson_id',lid).single();
-    if(data){el.innerHTML=data.content;if(ts)ts.textContent='Updated '+new Date(data.updated_at).toLocaleDateString();}
-    else el.innerHTML='<p>No instructor notes yet for this lesson.</p>';
-  }catch(e){el.innerHTML='<p>Notes unavailable.</p>';}
+    const{data} = await sb.from('lesson_notes')
+      .select('content,updated_at')
+      .eq('lesson_id', lessonId)
+      .single();
+    if(data && data.content){
+      // Instructor has added/overridden notes in Supabase — append after built-in notes
+      el.innerHTML = baseNotes + 
+        '<div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(41,121,255,0.2)">' +
+        '<p style="color:var(--acc);font-size:.82rem;font-family:var(--fmono);margin-bottom:12px">// INSTRUCTOR UPDATE</p>' +
+        data.content + '</div>';
+      if(ts) ts.textContent = 'Updated ' + new Date(data.updated_at).toLocaleDateString();
+    }
+    // If no data in Supabase — built-in notes already shown, nothing more to do
+  }catch(e){ /* Supabase unavailable — built-in notes already displayed */ }
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
@@ -2516,12 +2486,8 @@ function renderLesson(idx) {
   document.getElementById('lbread').textContent = bc;
   document.getElementById('lprose').innerHTML = body;
 
-  // Inject lesson-specific notes directly
-  const nc = document.getElementById('ncontent');
-  if (nc) {
-    nc.innerHTML = notes;
-    document.getElementById('nts').textContent = '';
-  }
+  // Load lesson notes (built-in + optional Supabase override)
+  loadNotes(CC + '-' + mod + '-' + lid, notes);
 
   // Sidebar
   document.querySelectorAll('.lr').forEach(r => r.classList.remove('on'));
