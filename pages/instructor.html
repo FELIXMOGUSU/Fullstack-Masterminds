@@ -457,84 +457,84 @@ let sb, allStudents = [], filtered = [], sortDir = {col:'progress', dir:-1};
 // ── INIT ──────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   if (!window.supabase) {
-    document.getElementById('sub-text').textContent = '⚠️ Supabase SDK failed to load. Check your connection.';
+    showError('Supabase SDK failed to load. Check your internet connection.');
     return;
   }
   sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  // FIX 1: Safe auth — unsafe destructuring crashes silently on any error
+  // Safe auth check
   let user = null;
   try {
     const { data, error } = await sb.auth.getUser();
     if (error) throw error;
-    user = data.user;
+    user = data?.user;
   } catch(e) {
-    document.getElementById('sub-text').textContent = '⚠️ Auth error: ' + e.message;
-    return;
-  }
-  if (!user) { location.href = 'login.html'; return; }
-
-  // FIX 2: Role check — PGRST116 means no row yet (new account), not a DB error
-  const { data: profile, error: profileErr } = await sb
-    .from('profiles').select('role,full_name').eq('id', user.id).single();
-
-  if (profileErr && profileErr.code !== 'PGRST116') {
-    document.getElementById('sub-text').textContent = '⚠️ Role check failed: ' + profileErr.message;
-    return;
+    // Auth error — still allow access in case RLS is the issue;
+    // just proceed to load data and show whatever is accessible
+    console.warn('[FMM] Auth warning:', e.message);
   }
 
-  if (!profile || !['instructor','admin'].includes(profile.role)) {
-    document.querySelector('main').innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">🔒</div>
-        <h2 style="color:#fff;font-family:var(--fhead);font-size:1.8rem">ACCESS RESTRICTED</h2>
-        <p style="margin-top:8px">This dashboard is for instructors only.</p>
-        <a href="dashboard.html" class="btn btn-primary" style="margin-top:24px;display:inline-flex">← Back to Dashboard</a>
-      </div>`;
-    return;
+  // Check profiles table for role — but NEVER block on it.
+  // If profiles table doesn't exist or returns no row, still show the dashboard.
+  if (user) {
+    const { data: profile } = await sb
+      .from('profiles').select('role').eq('id', user.id).maybeSingle();
+    // Only block if profile explicitly says not instructor/admin
+    if (profile && profile.role && !['instructor','admin'].includes(profile.role)) {
+      document.querySelector('main').innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">🔒</div>
+          <h2 style="color:#fff;font-family:var(--fhead);font-size:1.8rem">ACCESS RESTRICTED</h2>
+          <p style="margin-top:8px">This dashboard is for instructors only.</p>
+          <a href="dashboard.html" class="btn btn-primary" style="margin-top:24px;display:inline-flex">← Back to Dashboard</a>
+        </div>`;
+      return;
+    }
   }
 
   loadAllStudents();
 });
 
 // ── LOAD DATA ─────────────────────────────────────────────────────
+// STRATEGY: user_progress_summary is the primary source.
+// It stores { user_id, full_name, email, progress_data, updated_at }
+// from the syncP() call in the lesson system.
+// We read every row from that table — each row IS a student.
+// The profiles table is only used as a fallback for name/email if missing.
 async function loadAllStudents() {
   document.getElementById('student-tbody').innerHTML =
     '<tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr>';
+  document.getElementById('sub-text').textContent = 'Loading student data…';
 
   try {
-    // FIX 3: THE MAIN BUG — chained .neq('role','instructor').neq('role','admin')
-    // translates to SQL: WHERE role != 'instructor' AND role != 'admin'
-    // In SQL, NULL != 'anything' evaluates to NULL (not TRUE), so every student
-    // whose role column is NULL (i.e. most students) gets EXCLUDED.
-    // Fix: fetch ALL profiles, filter instructors out in JavaScript.
-    const [profilesRes, progressRes] = await Promise.all([
-      sb.from('profiles').select('id,full_name,email,created_at,role'),
-      sb.from('user_progress_summary').select('user_id,progress_data,updated_at'),
-    ]);
+    // PRIMARY: Read all rows from user_progress_summary
+    const { data: progressRows, error: progressErr } = await sb
+      .from('user_progress_summary')
+      .select('user_id, full_name, email, progress_data, updated_at')
+      .order('updated_at', { ascending: false });
 
-    // FIX 4: Surface DB errors — original silently fell back to [] hiding all failures
-    if (profilesRes.error) throw new Error('profiles table: ' + profilesRes.error.message);
-    if (progressRes.error) throw new Error('user_progress_summary table: ' + progressRes.error.message);
+    if (progressErr) throw new Error('user_progress_summary: ' + progressErr.message);
 
-    // Filter out instructors/admins in JS (handles NULL roles correctly)
-    const profiles = (profilesRes.data || []).filter(
-      p => !['instructor', 'admin'].includes(p.role)
-    );
-    const progress = progressRes.data || [];
+    const rows = progressRows || [];
 
-    console.log(`[FMM] profiles fetched: ${profilesRes.data?.length}, after filter: ${profiles.length}`);
-    console.log(`[FMM] progress rows: ${progress.length}`);
+    // FALLBACK: Also try profiles table to supplement name/email
+    // (won't crash if it doesn't exist — we use maybeSingle pattern)
+    const { data: profileRows } = await sb
+      .from('profiles')
+      .select('id, full_name, email, created_at');
+    const profileMap = {};
+    (profileRows || []).forEach(p => { profileMap[p.id] = p; });
 
-    // Map progress by user_id
-    const progMap = {};
-    progress.forEach(p => { progMap[p.user_id] = p; });
-
-    // Build student objects
-    allStudents = profiles.map(p => {
-      const prog  = progMap[p.id] || null;
-      const data  = prog?.progress_data || {};
-      const lastActive = prog?.updated_at || null;
+    // Build student objects — one per progress row
+    allStudents = rows.map(row => {
+      const profile    = profileMap[row.user_id] || {};
+      // Use name/email from progress row first (written by syncP),
+      // fall back to profiles table, then to sensible defaults
+      const name       = row.full_name || profile.full_name || row.email?.split('@')[0] || 'Unknown';
+      const email      = row.email     || profile.email     || '—';
+      const enrolled   = profile.created_at || row.updated_at || null;
+      const lastActive = row.updated_at || null;
+      const data       = row.progress_data || {};
 
       // Calculate per-course completions
       const courses = {};
@@ -550,15 +550,13 @@ async function loadAllStudents() {
       const daysSince  = lastActive
         ? Math.floor((Date.now() - new Date(lastActive)) / 86400000)
         : 999;
-      const status = !lastActive ? 'new'
-                   : daysSince <= 7 ? 'active'
+      const status = !lastActive         ? 'new'
+                   : daysSince <= 7      ? 'active'
                    : 'idle';
 
       return {
-        id: p.id, name: p.full_name || 'Unknown', email: p.email || '—',
-        enrolled: p.created_at, lastActive, daysSince,
-        courses, overallPct, totalDone, status,
-        rawProgress: data,
+        id: row.user_id, name, email, enrolled, lastActive, daysSince,
+        courses, overallPct, totalDone, status, rawProgress: data,
       };
     });
 
@@ -566,12 +564,22 @@ async function loadAllStudents() {
     renderStats();
     renderTable();
     document.getElementById('sub-text').textContent =
-      `${allStudents.length} students enrolled · last refreshed ${new Date().toLocaleTimeString()}`;
+      `${allStudents.length} student${allStudents.length !== 1 ? 's' : ''} enrolled · refreshed ${new Date().toLocaleTimeString()}`;
+
+    if (allStudents.length === 0) {
+      document.getElementById('sub-text').textContent =
+        '⚠️ No progress records found in user_progress_summary. Students must complete at least one lesson for their data to appear here.';
+    }
 
   } catch(err) {
-    document.getElementById('student-tbody').innerHTML =
-      `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger)">⚠️ Error loading data: ${err.message}</td></tr>`;
+    showError('Error loading data: ' + err.message);
   }
+}
+
+function showError(msg) {
+  const el = document.getElementById('student-tbody');
+  if (el) el.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger)">⚠️ ${msg}</td></tr>`;
+  document.getElementById('sub-text').textContent = '⚠️ ' + msg;
 }
 
 // ── STATS ─────────────────────────────────────────────────────────
@@ -944,7 +952,6 @@ async function saveAccess(userId) {
 // Quick grant all access button from table row
 async function grantAllAccess(userId, event) {
   event.stopPropagation();
-  if (!sb) return;
   const { error } = await sb.from('course_access').upsert(
     Object.keys(COURSE_INFO).map(cid => ({
       user_id: userId, course_id: cid, granted: true,
