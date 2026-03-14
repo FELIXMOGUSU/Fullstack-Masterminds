@@ -429,7 +429,21 @@ async function doLogin(e){
   if(!sb){await delay(700);localStorage.setItem('fmm_user',JSON.stringify({email,name:email.split('@')[0]}));showAlert('alert','ok','Welcome back! Redirecting…');setTimeout(()=>location.href='https://felixmogusu.github.io/Fullstack-Masterminds/pages/dashboard.html',900);return;}
   const{error}=await sb.auth.signInWithPassword({email,password:pass});
   if(error){showAlert('alert','err',error.message);setBtn('sbtn','Sign In',false);}
-  else{showAlert('alert','ok','Signed in! Redirecting…');setTimeout(()=>location.href='https://felixmogusu.github.io/Fullstack-Masterminds/pages/dashboard.html',800);}
+  else{
+    // Check role — send instructor to instructor dashboard, students to normal dashboard
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).single();
+      const dest = (profile && ['instructor','admin'].includes(profile.role))
+        ? 'https://felixmogusu.github.io/Fullstack-Masterminds/pages/instructor.html'
+        : 'https://felixmogusu.github.io/Fullstack-Masterminds/pages/dashboard.html';
+      showAlert('alert','ok','Signed in! Redirecting…');
+      setTimeout(() => location.href = dest, 800);
+    } catch(e) {
+      showAlert('alert','ok','Signed in! Redirecting…');
+      setTimeout(() => location.href = 'https://felixmogusu.github.io/Fullstack-Masterminds/pages/dashboard.html', 800);
+    }
+  }
 }
 
 async function doRegister(e){
