@@ -279,7 +279,7 @@ main{max-width:1100px;margin:0 auto;padding:48px 28px 80px}
     <div class="profile-hero-actions">
       <a href="certificates.html" class="btn btn-primary">🏆 My Certificates</a>
       <button class="btn btn-ghost" onclick="doLogout()">Sign Out</button>
-      <a id="instructor-panel-btn" href="instructor.html" class="btn btn-instructor" style="display:none">⚡ Instructor Panel</a>
+      <a id="instructor-panel-btn" href="https://felixmogusu.github.io/Fullstack-Masterminds/pages/instructor.html" class="btn btn-instructor" style="display:none" title="Only visible to instructors">⚡ Instructor Panel</a>
     </div>
   </div>
 
@@ -424,11 +424,10 @@ window.addEventListener('DOMContentLoaded', async () => {
       .eq('id', user.id).single();
     currentProfile = profile;
 
-    // Role-aware nav
-    if (profile && ['instructor','admin'].includes(profile.role)) {
-      document.getElementById('nav-instructor-li').style.display = 'list-item';
-      document.getElementById('instructor-panel-btn').style.display = 'inline-flex';
-    }
+    // Role-aware nav — instructor elements only shown to instructors/admins
+    const isInstructor = profile && ['instructor','admin'].includes(profile.role);
+    document.getElementById('nav-instructor-li').style.display = isInstructor ? 'list-item' : 'none';
+    document.getElementById('instructor-panel-btn').style.display = isInstructor ? 'inline-flex' : 'none';
 
     // Nav avatar
     const av = document.getElementById('nav-avatar');
