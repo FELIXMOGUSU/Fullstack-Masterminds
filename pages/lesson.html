@@ -320,6 +320,82 @@ a{color:inherit;text-decoration:none}
 
 .lr-locked { opacity: 0.45; cursor: not-allowed !important; }
 .lr-locked:hover { background: transparent !important; }
+
+/* ── PAYWALL ──────────────────────────────────────────── */
+.paywall-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(2,8,24,0.92);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.paywall-card {
+  background: linear-gradient(135deg, #060e24 0%, #0b1535 100%);
+  border: 1px solid rgba(41,121,255,0.35);
+  border-radius: 16px; padding: 44px 40px;
+  max-width: 520px; width: 100%; text-align: center;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 60px rgba(41,121,255,0.08);
+}
+.paywall-lock { font-size: 3rem; margin-bottom: 16px; }
+.paywall-card h2 {
+  font-family: 'Bebas Neue', sans-serif; font-size: 2rem;
+  color: #fff; letter-spacing: .08em; margin-bottom: 8px;
+}
+.paywall-card p { color: #7a9cc8; font-size: .93rem; line-height: 1.65; margin-bottom: 24px; }
+.paywall-price {
+  background: rgba(41,121,255,0.1); border: 1px solid rgba(41,121,255,0.25);
+  border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;
+}
+.paywall-price .amount {
+  font-family: 'Bebas Neue', sans-serif; font-size: 2.8rem;
+  color: #2979ff; letter-spacing: .04em; line-height: 1;
+}
+.paywall-price .level {
+  font-family: 'JetBrains Mono', monospace; font-size: .72rem;
+  color: #7a9cc8; letter-spacing: .1em; text-transform: uppercase; margin-top: 4px;
+}
+.paywall-features { text-align: left; margin-bottom: 28px; list-style: none; }
+.paywall-features li {
+  padding: 6px 0; font-size: .88rem; color: #c8daf5;
+  border-bottom: 1px solid rgba(41,121,255,0.08);
+  display: flex; align-items: center; gap: 10px;
+}
+.paywall-features li:last-child { border-bottom: none; }
+.paywall-instructions {
+  background: rgba(0,195,255,0.06); border: 1px solid rgba(0,195,255,0.2);
+  border-radius: 10px; padding: 16px 18px; margin-bottom: 24px;
+  text-align: left;
+}
+.paywall-instructions h4 {
+  font-family: 'JetBrains Mono', monospace; font-size: .72rem;
+  color: #00c3ff; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px;
+}
+.pay-step {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin-bottom: 8px; font-size: .85rem; color: #c8daf5;
+}
+.pay-step:last-child { margin-bottom: 0; }
+.step-num {
+  background: rgba(41,121,255,0.2); color: #2979ff;
+  font-family: 'JetBrains Mono', monospace; font-size: .72rem;
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-weight: 700;
+}
+.paywall-contact {
+  font-size: .82rem; color: #7a9cc8; margin-top: 16px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.pay-detail {
+  background: rgba(41,121,255,0.08); border: 1px solid rgba(41,121,255,0.2);
+  border-radius: 8px; padding: 10px 14px; margin: 10px 0;
+  font-family: 'JetBrains Mono', monospace; font-size: .82rem;
+  color: #c8daf5; text-align: left; cursor: pointer;
+  transition: background .2s;
+}
+.pay-detail:hover { background: rgba(41,121,255,0.14); }
+.pay-detail strong { color: #00c3ff; display: block; font-size: .7rem; margin-bottom: 2px; }
+.copy-hint { font-size: .7rem; color: #3a5a8a; margin-top: 2px; }
+
 /* ── INTEGRATED LESSON NOTES ───────────────────────── */
 .note-section { background: rgba(41,121,255,0.06); border-left: 3px solid var(--blue); border-radius: 0 8px 8px 0; padding: 24px 28px; margin-top: 8px; }
 .note-section h3 { font-family: var(--fbody); font-size: 1rem; color: var(--acc); margin-bottom: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
@@ -2662,7 +2738,7 @@ function downloadNotes() {
 // ════════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const p = new URLSearchParams(location.search);
   CC = p.get('course') || 'web-dev';
   const names = {
@@ -2671,8 +2747,197 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const n = document.getElementById('lcname');
   if (n) n.innerHTML = names[CC] || '🌐 Website Development';
+  // Check paid access before rendering
+  await checkCourseAccess();
   buildSidebar();
   renderLesson(0);
 });
+
+// ════════════════════════════════════════════════════════════════
+// MONETISATION — PAYWALL SYSTEM
+// ════════════════════════════════════════════════════════════════
+
+// Course tiers and pricing
+const COURSE_TIERS = {
+  'web-dev':   { tier: 'advanced',     price: 10000, label: 'Advanced' },
+  'wordpress': { tier: 'intermediate', price: 5000,  label: 'Intermediate' },
+  'seo':       { tier: 'intermediate', price: 5000,  label: 'Intermediate' },
+  'hosting':   { tier: 'beginner',     price: 3000,  label: 'Beginner' },
+  'ecommerce': { tier: 'advanced',     price: 10000, label: 'Advanced' },
+};
+
+const PAYWALL_LESSON = 0.5; // trigger at 50% completion
+let courseAccess = {};      // { 'web-dev': true/false, ... }
+let paySettings  = {};      // { mpesa_number, mpesa_name, bank_name, bank_account, bank_branch, contact_email }
+
+// Called once on init — checks Supabase for this user's access
+async function checkCourseAccess() {
+  if (!sb) return;
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+
+    // Get access grants for this user
+    const { data } = await sb.from('course_access')
+      .select('course_id, granted')
+      .eq('user_id', user.id);
+
+    (data || []).forEach(row => {
+      if (row.granted) courseAccess[row.course_id] = true;
+    });
+
+    // Get payment settings from instructor settings table
+    const { data: settings } = await sb.from('payment_settings')
+      .select('*').eq('id', 1).single();
+    if (settings) paySettings = settings;
+
+  } catch(e) { /* Supabase unavailable — allow all (graceful degradation) */ }
+}
+
+// Check if current student has access to continue past 50%
+function hasAccess(courseId) {
+  return !!courseAccess[courseId];
+}
+
+// How far into the course is the student (0-1)
+function getCourseRatio(courseId) {
+  const p = getP();
+  const done = Object.values(p[courseId] || {}).flat().length;
+  const total = TOTALS[courseId] || 1;
+  return done / total;
+}
+
+// Should this lesson be paywalled?
+function isPaywalled(courseId, lessonIdx) {
+  const cur = getCur();
+  const paywallIdx = Math.floor(cur.length * PAYWALL_LESSON); // lesson index at 50%
+  return lessonIdx >= paywallIdx && !hasAccess(courseId);
+}
+
+// Show paywall overlay
+async function showPaywall(courseId) {
+  // Remove existing
+  document.querySelector('.paywall-overlay')?.remove();
+
+  const tier  = COURSE_TIERS[courseId];
+  const names = {
+    'web-dev':'Website Development','wordpress':'WordPress Design',
+    'seo':'SEO Mastery','hosting':'Hosting & Maintenance','ecommerce':'E-Commerce Mastery'
+  };
+
+  // Get payment details (from settings or defaults)
+  const mpesa    = paySettings.mpesa_number  || 'Contact instructor';
+  const mpName   = paySettings.mpesa_name    || 'FMM Academy';
+  const bankName = paySettings.bank_name     || '';
+  const bankAcc  = paySettings.bank_account  || '';
+  const bankBr   = paySettings.bank_branch   || '';
+  const email    = paySettings.contact_email || '';
+
+  const bankHtml = bankAcc ? `
+    <div class="pay-detail" onclick="copyText('${bankAcc}', this)">
+      <strong>BANK ACCOUNT</strong>
+      ${bankName} — ${bankAcc}<br>
+      <small style="color:#7a9cc8">${bankBr}</small>
+      <div class="copy-hint">Click to copy account number</div>
+    </div>` : '';
+
+  const ov = document.createElement('div');
+  ov.className = 'paywall-overlay';
+  ov.id = 'paywall-overlay';
+  ov.innerHTML = `
+    <div class="paywall-card">
+      <div class="paywall-lock">🔐</div>
+      <h2>UNLOCK FULL COURSE</h2>
+      <p>You've completed the free preview of <strong style="color:#fff">${names[courseId]}</strong>. 
+         Purchase access to continue to all remaining lessons.</p>
+      <div class="paywall-price">
+        <div class="amount">KES ${tier.price.toLocaleString()}</div>
+        <div class="level">${tier.label} Course — Full Access</div>
+      </div>
+      <ul class="paywall-features">
+        <li>✅ All remaining lessons unlocked immediately</li>
+        <li>✅ All quizzes and completion certificates</li>
+        <li>✅ Downloadable course notes PDF</li>
+        <li>✅ Lifetime access — study at your own pace</li>
+      </ul>
+      <div class="paywall-instructions">
+        <h4>💳 How to Pay</h4>
+        <div class="pay-step">
+          <span class="step-num">1</span>
+          <span>Send <strong>KES ${tier.price.toLocaleString()}</strong> via M-Pesa to:</span>
+        </div>
+        <div class="pay-detail" onclick="copyText('${mpesa}', this)">
+          <strong>M-PESA NUMBER</strong>
+          ${mpesa} — ${mpName}
+          <div class="copy-hint">Click to copy number</div>
+        </div>
+        ${bankHtml}
+        <div class="pay-step" style="margin-top:10px">
+          <span class="step-num">2</span>
+          <span>Send your M-Pesa confirmation code + email to your instructor to get access activated.</span>
+        </div>
+        ${email ? `<div class="paywall-contact">📧 ${email}</div>` : ''}
+      </div>
+      <div class="paywall-contact">
+        Once payment is confirmed your instructor will grant access — usually within a few hours.
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function copyText(text, el) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = el.querySelector('.copy-hint');
+    if (orig) { orig.textContent = '✅ Copied!'; setTimeout(() => orig.textContent = 'Click to copy', 2000); }
+  });
+}
+
+// Intercept renderLesson — check paywall before rendering
+const _origRenderLesson = renderLesson;
+function renderLesson(idx) {
+  if (isPaywalled(CC, idx)) {
+    // Still update sidebar highlight and scroll position
+    const cur = getCur();
+    const [mod, lid] = cur[idx];
+    document.querySelectorAll('.lr').forEach(r => r.classList.remove('on'));
+    const row = document.querySelector(`.lr[data-mod="${mod}"][data-lid="${lid}"]`);
+    if (row) row.classList.add('on');
+    showPaywall(CC);
+    return;
+  }
+  // Close paywall if open
+  document.querySelector('.paywall-overlay')?.remove();
+  _origRenderLesson(idx);
+}
+
+// Intercept loadLesson too
+const _origLoadLesson = loadLesson;
+function loadLesson(mod, lid) {
+  const cur = getCur();
+  const idx = cur.findIndex(l => l[0] === mod && l[1] === lid);
+  if (idx !== -1 && isPaywalled(CC, idx)) {
+    showPaywall(CC); return;
+  }
+  _origLoadLesson(mod, lid);
+}
+
+// Patch sidebar to show lock icon on paywalled lessons
+const _origBuildSidebar = buildSidebar;
+function buildSidebar() {
+  _origBuildSidebar();
+  const cur = getCur();
+  cur.forEach((lesson, idx) => {
+    if (isPaywalled(CC, idx)) {
+      const [mod, lid] = lesson;
+      const row = document.querySelector(`.lr[data-mod="${mod}"][data-lid="${lid}"]`);
+      if (row) {
+        row.classList.add('lr-locked');
+        const dot = row.querySelector('.ld');
+        if (dot && dot.textContent !== '✓') dot.textContent = '💰';
+      }
+    }
+  });
+}
+
 </script>
 </body></html>
