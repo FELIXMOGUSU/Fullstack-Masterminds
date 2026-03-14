@@ -456,13 +456,34 @@ let sb, allStudents = [], filtered = [], sortDir = {col:'progress', dir:-1};
 
 // ── INIT ──────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
+  if (!window.supabase) {
+    document.getElementById('sub-text').textContent = '⚠️ Supabase SDK failed to load. Check your connection.';
+    return;
+  }
   sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  // Auth guard — only instructors
-  const { data: { user } } = await sb.auth.getUser();
+  // Auth guard — safe destructuring with error handling
+  let user = null;
+  try {
+    const { data, error } = await sb.auth.getUser();
+    if (error) throw error;
+    user = data.user;
+  } catch(e) {
+    document.getElementById('sub-text').textContent = '⚠️ Auth error: ' + e.message;
+    return;
+  }
+
   if (!user) { location.href = 'login.html'; return; }
 
-  const { data: profile } = await sb.from('profiles').select('role,full_name').eq('id', user.id).single();
+  // Role check — handle missing row (PGRST116) separately from real errors
+  const { data: profile, error: profileErr } = await sb
+    .from('profiles').select('role,full_name').eq('id', user.id).single();
+
+  if (profileErr && profileErr.code !== 'PGRST116') {
+    document.getElementById('sub-text').textContent = '⚠️ Could not verify role: ' + profileErr.message;
+    return;
+  }
+
   if (!profile || !['instructor','admin'].includes(profile.role)) {
     document.querySelector('main').innerHTML = `
       <div class="empty">
@@ -483,14 +504,22 @@ async function loadAllStudents() {
     '<tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr>';
 
   try {
-    // Get all profiles (non-instructor) + their progress summaries
+    // BUG FIX: Fetch ALL profiles — chained .neq() excluded students whose
+    // role column is NULL (most students never have a role set).
+    // We filter out instructors/admins in JS instead.
     const [profilesRes, progressRes] = await Promise.all([
-      sb.from('profiles').select('id,full_name,email,created_at').neq('role','instructor').neq('role','admin'),
+      sb.from('profiles').select('id,full_name,email,created_at,role'),
       sb.from('user_progress_summary').select('user_id,progress_data,updated_at'),
     ]);
 
-    const profiles  = profilesRes.data  || [];
-    const progress  = progressRes.data  || [];
+    // Surface any DB errors immediately rather than silently using empty arrays
+    if (profilesRes.error) throw new Error('Profiles: ' + profilesRes.error.message);
+    if (progressRes.error) throw new Error('Progress: ' + progressRes.error.message);
+
+    const profiles = (profilesRes.data || []).filter(
+      p => !['instructor','admin'].includes(p.role)
+    );
+    const progress = progressRes.data || [];
 
     // Map progress by user_id
     const progMap = {};
@@ -664,7 +693,7 @@ function applySort() {
 }
 
 // ── DRAWER ────────────────────────────────────────────────────────
-function openDrawer(userId) {
+async function openDrawer(userId) {
   const s = allStudents.find(x => x.id === userId);
   if (!s) return;
 
@@ -903,7 +932,7 @@ async function saveAccess(userId) {
     setTimeout(() => saving.textContent = '', 4000);
 
     // Refresh stats
-    loadAllStudents();
+    await loadAllStudents();
   } catch(err) {
     saving.textContent = '❌ Error: ' + err.message;
   }
@@ -912,6 +941,7 @@ async function saveAccess(userId) {
 // Quick grant all access button from table row
 async function grantAllAccess(userId, event) {
   event.stopPropagation();
+  if (!sb) return;
   const { error } = await sb.from('course_access').upsert(
     Object.keys(COURSE_INFO).map(cid => ({
       user_id: userId, course_id: cid, granted: true,
@@ -921,7 +951,9 @@ async function grantAllAccess(userId, event) {
   );
   if (!error) {
     showGrantToast('✅ Full access granted!');
-    loadAllStudents();
+    await loadAllStudents();
+  } else {
+    showGrantToast('❌ Error: ' + error.message);
   }
 }
 
