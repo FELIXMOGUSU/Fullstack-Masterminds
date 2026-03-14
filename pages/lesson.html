@@ -309,12 +309,27 @@ a{color:inherit;text-decoration:none}
 @media(max-width:768px){
   .nl{display:none;flex-direction:column;position:absolute;top:70px;left:0;right:0;background:var(--bg1);border-bottom:1px solid var(--bdr);padding:16px;gap:4px}
   .nl.op{display:flex}.hbg{display:flex}
-  .sb,.lsb{display:none}
-  .dm,.lb{padding:24px}
-  .ac{padding:36px 24px}
-  .qw{padding:24px}
+  .sb{display:none}
+  /* Mobile lesson layout */
+  .ll{flex-direction:column}
+  .lsb{width:100%;height:auto;position:static;border-right:none;border-bottom:1px solid var(--bdr);max-height:280px;overflow-y:auto}
+  .lb{padding:24px 20px;max-width:100%}
+  .lb h1{font-size:1.8rem}
+  .lp pre{font-size:.78rem;overflow-x:auto}
+  .lp table{font-size:.78rem;display:block;overflow-x:auto}
+  .lnav{flex-direction:column;gap:10px}
+  .lnav .btn{width:100%;justify-content:center}
+  .dm,.ac{padding:24px}
+  .qw{padding:20px}
   .fg{grid-template-columns:1fr}
   .steps{grid-template-columns:1fr}
+  .paywall-card{padding:32px 24px}
+  .note-section{padding:18px 20px}
+}
+@media(max-width:480px){
+  .lb{padding:18px 16px}
+  .lb h1{font-size:1.5rem}
+  .lsb{max-height:220px}
 }
 
 
@@ -418,79 +433,55 @@ a{color:inherit;text-decoration:none}
 </nav>
 <div class="lw">
   <div class="ll">
+
+    <!-- SIDEBAR — built dynamically by buildSidebar() -->
     <aside class="lsb">
       <div class="lsh">
         <div class="lsc" id="lcname">🌐 Website Development</div>
-        <div class="lsp"><span id="lpt">0% complete</span></div>
+        <div class="lsp">
+          <span id="lpt">0% complete</span>
+          <span id="lpt2"></span>
+        </div>
         <div class="pt" style="margin-top:8px"><div class="pf2" id="lpf" style="width:0%"></div></div>
       </div>
       <div id="sidebar-modules"></div>
-      <div style="padding:16px">
+      <div style="padding:16px 16px 24px">
         <button class="btn bg" onclick="downloadNotes()" style="width:100%;justify-content:center;gap:8px;font-size:.82rem">
           📥 Download Course Notes PDF
         </button>
       </div>
     </aside>
-    <aside class="lsb">
-      <div class="lsh">
-        <div class="lsc" id="lcname">🌐 Website Development</div>
-        <div class="lsp"><span id="lpt">0% complete</span></div>
-        <div class="pt" style="margin-top:8px"><div class="pf2" id="lpf" style="width:0%"></div></div>
-      </div>
-      <!-- MODULE 1 -->
-      <div class="mg">
-        <div class="mt op"><span>Module 1: HTML Fundamentals</span><span class="mta">›</span></div>
-        <div class="ml op">
-          <div class="lr on" data-mod="m1" data-lid="l1" onclick="loadLesson('m1','l1')"><span class="ld"></span>What is HTML?</div>
-          <div class="lr" data-mod="m1" data-lid="l2" onclick="loadLesson('m1','l2')"><span class="ld"></span>Document Structure</div>
-          <div class="lr" data-mod="m1" data-lid="l3" onclick="loadLesson('m1','l3')"><span class="ld"></span>Tags &amp; Elements</div>
-          <div class="lr" data-mod="m1" data-lid="l4" onclick="loadLesson('m1','l4')"><span class="ld"></span>Headings, Text &amp; Lists</div>
-          <div class="lr" data-mod="m1" data-lid="l5" onclick="loadLesson('m1','l5')"><span class="ld"></span>Links &amp; Images</div>
+
+    <!-- LESSON CONTENT — populated by renderLesson() -->
+    <div class="lb" id="lb">
+      <div class="lbr" id="lbread"></div>
+      <h1 id="lh1"></h1>
+      <div class="lp" id="lprose"></div>
+
+      <!-- INSTRUCTOR NOTES — shown only when notes exist -->
+      <div class="nb" style="display:none">
+        <div class="nh">
+          <span style="font-size:1.1rem">📌</span>
+          <span class="nl2">Instructor Notes</span>
+          <span class="nt" id="nts"></span>
         </div>
+        <div class="nc" id="ncontent"></div>
       </div>
-      <!-- MODULE 2 -->
-      <div class="mg">
-        <div class="mt"><span>Module 2: CSS Styling</span><span class="mta">›</span></div>
-        <div class="ml">
-          <div class="lr" data-mod="m2" data-lid="l1" onclick="loadLesson('m2','l1')"><span class="ld"></span>Introduction to CSS</div>
-          <div class="lr" data-mod="m2" data-lid="l2" onclick="loadLesson('m2','l2')"><span class="ld"></span>Selectors &amp; Properties</div>
-          <div class="lr" data-mod="m2" data-lid="l3" onclick="loadLesson('m2','l3')"><span class="ld"></span>Box Model &amp; Spacing</div>
-          <div class="lr" data-mod="m2" data-lid="l4" onclick="loadLesson('m2','l4')"><span class="ld"></span>Flexbox Layout</div>
-          <div class="lr" data-mod="m2" data-lid="l5" onclick="loadLesson('m2','l5')"><span class="ld"></span>Responsive Design</div>
-        </div>
+
+      <!-- QUIZ -->
+      <div style="margin-top:44px">
+        <p style="color:var(--txtm);font-size:.87rem;margin-bottom:20px;font-family:'JetBrains Mono',monospace">// Complete the quiz — score 70% to unlock the next lesson</p>
+        <div class="qw" id="qbox"></div>
       </div>
-      <!-- MODULE 3 -->
-      <div class="mg">
-        <div class="mt"><span>Module 3: JavaScript Basics</span><span class="mta">›</span></div>
-        <div class="ml">
-          <div class="lr" data-mod="m3" data-lid="l1" onclick="loadLesson('m3','l1')"><span class="ld"></span>What is JavaScript?</div>
-          <div class="lr" data-mod="m3" data-lid="l2" onclick="loadLesson('m3','l2')"><span class="ld"></span>Variables &amp; Functions</div>
-          <div class="lr" data-mod="m3" data-lid="l3" onclick="loadLesson('m3','l3')"><span class="ld"></span>DOM Manipulation</div>
-        </div>
+
+      <!-- LESSON NAV -->
+      <div class="lnav">
+        <button class="btn bg" id="btn-prev" onclick="goPrev()" style="display:none">← Previous</button>
+        <button class="btn bp" id="btn-next" onclick="goNext()" style="display:none">Next Lesson <span class="ar">→</span></button>
       </div>
-    </aside>
-<div class="lb" id="lb">
-  <div class="lbr" id="lbread"></div>
-  <h1 id="lh1"></h1>
-  <div class="lp" id="lprose"></div>
-  <div class="nb" style="display:none">
-    <div class="nh">
-      <span style="font-size:1.1rem">📌</span>
-      <span class="nl2">Instructor Notes</span>
-      <span class="nt" id="nts"></span>
     </div>
-    <div class="nc" id="ncontent"></div>
+
   </div>
-  <div style="margin-top:44px">
-    <p style="color:var(--txtm);font-size:.87rem;margin-bottom:20px;font-family:'JetBrains Mono',monospace">// Complete the quiz — 70% to pass and unlock the next lesson</p>
-    <div class="qw" id="qbox"></div>
-  </div>
-  <div class="lnav">
-    <button class="btn bg" id="btn-prev" onclick="goPrev()">← Previous</button>
-    <button class="btn bp" id="btn-next" onclick="goNext()" style="display:none">Next Lesson <span class="ar">→</span></button>
-  </div>
-</div>
-</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
