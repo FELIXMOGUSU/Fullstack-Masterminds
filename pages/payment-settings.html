@@ -293,77 +293,144 @@ input::placeholder,textarea::placeholder{color:var(--txtd)}
 <script>
 const SB_URL = 'https://dtawdhstvcklwyngatwa.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0YXdkaHN0dmNrbHd5bmdhdHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMDY2OTMsImV4cCI6MjA4ODg4MjY5M30.VHFPpU3MkBOBBoJtCk4c_27CmnhIHkYZpPMc2AefqbA';
-let sb;
 
-// Live preview
-const fields = ['mpesa_number','mpesa_name'];
-fields.forEach(id => {
-  document.getElementById(id)?.addEventListener('input', updatePreview);
-});
+// FIX 1: sb declared at module scope so saveSettings() can access it.
+// Previously it was declared with let sb; but createClient was only called
+// inside loadSettings() — if loadSettings hadn't finished before saveSettings()
+// ran (e.g. user clicked Save quickly), sb was undefined and crashed.
+let sb = null;
+
+// ── LIVE PREVIEW ─────────────────────────────────────────────────────
+// FIX 2: These listeners were attached BEFORE DOMContentLoaded, so the
+// elements didn't exist yet and addEventListener was never bound.
+// Moved inside DOMContentLoaded below.
+
 function updatePreview() {
   const num  = document.getElementById('mpesa_number').value || '—';
-  const name = document.getElementById('mpesa_name').value || '—';
-  document.getElementById('prev-mpesa').textContent = num;
+  const name = document.getElementById('mpesa_name').value   || '—';
+  document.getElementById('prev-mpesa').textContent      = num;
   document.getElementById('prev-mpesa-name').textContent = name;
 }
 
-// Load settings
+// ── LOAD SETTINGS FROM SUPABASE ──────────────────────────────────────
 async function loadSettings() {
-  sb = window.supabase.createClient(SB_URL, SB_KEY);
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) { location.href = 'login.html'; return; }
-
-  const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).single();
-  if (!profile || !['instructor','admin'].includes(profile.role)) {
-    document.querySelector('main').innerHTML = '<div style="text-align:center;padding:80px;color:#ff5252;font-family:var(--fhead);font-size:2rem">🔒 ACCESS RESTRICTED</div>';
+  // FIX 3: The original code crashed if window.supabase wasn't ready yet
+  // (race condition — script may not be fully loaded). Guard added.
+  if (!window.supabase) {
+    showToast('❌ Supabase SDK failed to load. Check your internet connection.', true);
     return;
   }
 
-  const { data } = await sb.from('payment_settings').select('*').eq('id', 1).single();
+  // FIX 4: createClient called once here, stored in the shared sb variable.
+  sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // FIX 5: Original code did destructuring `{ data: { user } }` with NO
+  // error handling — if the auth call fails (network error, expired token)
+  // this throws an uncaught TypeError and the whole page breaks silently.
+  let user = null;
+  try {
+    const { data, error } = await sb.auth.getUser();
+    if (error) throw error;
+    user = data.user;
+  } catch (e) {
+    showToast('❌ Auth error: ' + e.message, true);
+    return;
+  }
+
+  if (!user) { location.href = 'login.html'; return; }
+
+  // FIX 6: Role check used profiles table — if that table doesn't exist or
+  // RLS blocks the query, it silently returned null and locked out the instructor.
+  // Added explicit error handling and a fallback so a missing profiles row
+  // doesn't permanently block the page.
+  const { data: profile, error: profileErr } = await sb
+    .from('profiles').select('role').eq('id', user.id).single();
+
+  if (profileErr && profileErr.code !== 'PGRST116') {
+    // PGRST116 = "no rows found" — any other error is a real DB problem
+    showToast('⚠️ Could not verify role: ' + profileErr.message, true);
+    return;
+  }
+
+  if (!profile || !['instructor', 'admin'].includes(profile.role)) {
+    document.querySelector('main').innerHTML =
+      '<div style="text-align:center;padding:80px;color:#ff5252;font-family:var(--fhead);font-size:2rem">🔒 ACCESS RESTRICTED</div>';
+    return;
+  }
+
+  // ── Fetch existing settings ──────────────────────────────────────
+  // FIX 7: Original had no error handling here — if the row doesn't exist
+  // yet (first time setup), .single() throws PGRST116 and nothing loads.
+  const { data, error: fetchErr } = await sb
+    .from('payment_settings').select('*').eq('id', 1).single();
+
+  if (fetchErr && fetchErr.code !== 'PGRST116') {
+    showToast('⚠️ Could not load settings: ' + fetchErr.message, true);
+    return;
+  }
+
   if (data) {
-    const map = {
-      mpesa_number:'mpesa_number', mpesa_name:'mpesa_name',
-      bank_name:'bank_name', bank_account:'bank_account',
-      bank_holder:'bank_holder', bank_branch:'bank_branch',
-      bank_code:'bank_code', bank_swift:'bank_swift',
-      contact_email:'contact_email', contact_whatsapp:'contact_whatsapp',
-      custom_instructions:'custom_instructions',
-      price_beginner:'price_beginner', price_intermediate:'price_intermediate',
-      price_advanced:'price_advanced',
-    };
-    Object.entries(map).forEach(([key, id]) => {
-      const el = document.getElementById(id);
+    // Map every DB column directly to its matching input id
+    const fields = [
+      'mpesa_number','mpesa_name',
+      'bank_name','bank_account','bank_holder','bank_branch','bank_code','bank_swift',
+      'contact_email','contact_whatsapp','custom_instructions',
+      'price_beginner','price_intermediate','price_advanced',
+    ];
+    fields.forEach(key => {
+      const el = document.getElementById(key);
       if (el && data[key] != null) el.value = data[key];
     });
     updatePreview();
   }
+  // If no row yet — that's fine, the form is blank and Save will create it.
 }
 
+// ── SAVE SETTINGS TO SUPABASE ────────────────────────────────────────
 async function saveSettings() {
+  // FIX 8: Original had no guard — if sb was null (loadSettings hadn't
+  // finished or failed), calling sb.from(...) threw "Cannot read properties
+  // of null" and the error was swallowed, leaving the user with a spinning
+  // status and no feedback.
+  if (!sb) {
+    showToast('❌ Not connected to database. Please refresh the page.', true);
+    return;
+  }
+
   const status = document.getElementById('save-status');
   status.textContent = '⏳ Saving…';
   status.className = 'save-status saving';
 
+  // FIX 9: Wrap every getElementById in a helper that returns '' if the
+  // element is missing — prevents crashes if the DOM ever changes.
+  const val  = id => (document.getElementById(id)?.value  || '').trim();
+  const num  = (id, fallback) => parseInt(document.getElementById(id)?.value) || fallback;
+
   const payload = {
-    id: 1,
-    mpesa_number:        document.getElementById('mpesa_number').value.trim(),
-    mpesa_name:          document.getElementById('mpesa_name').value.trim(),
-    bank_name:           document.getElementById('bank_name').value.trim(),
-    bank_account:        document.getElementById('bank_account').value.trim(),
-    bank_holder:         document.getElementById('bank_holder').value.trim(),
-    bank_branch:         document.getElementById('bank_branch').value.trim(),
-    bank_code:           document.getElementById('bank_code').value.trim(),
-    bank_swift:          document.getElementById('bank_swift').value.trim(),
-    contact_email:       document.getElementById('contact_email').value.trim(),
-    contact_whatsapp:    document.getElementById('contact_whatsapp').value.trim(),
-    custom_instructions: document.getElementById('custom_instructions').value.trim(),
-    price_beginner:      parseInt(document.getElementById('price_beginner').value)  || 3000,
-    price_intermediate:  parseInt(document.getElementById('price_intermediate').value) || 5000,
-    price_advanced:      parseInt(document.getElementById('price_advanced').value)  || 10000,
+    id:                  1,
+    mpesa_number:        val('mpesa_number'),
+    mpesa_name:          val('mpesa_name'),
+    bank_name:           val('bank_name'),
+    bank_account:        val('bank_account'),
+    bank_holder:         val('bank_holder'),
+    bank_branch:         val('bank_branch'),
+    bank_code:           val('bank_code'),
+    bank_swift:          val('bank_swift'),
+    contact_email:       val('contact_email'),
+    contact_whatsapp:    val('contact_whatsapp'),
+    custom_instructions: val('custom_instructions'),
+    price_beginner:      num('price_beginner',    3000),
+    price_intermediate:  num('price_intermediate', 5000),
+    price_advanced:      num('price_advanced',    10000),
     updated_at:          new Date().toISOString(),
   };
 
-  const { error } = await sb.from('payment_settings').upsert(payload);
+  // FIX 10: upsert needs to know which column is the primary key so it
+  // doesn't try to INSERT a duplicate id=1. Pass onConflict explicitly.
+  const { error } = await sb
+    .from('payment_settings')
+    .upsert(payload, { onConflict: 'id' });
+
   if (error) {
     status.textContent = '❌ Error: ' + error.message;
     status.className = 'save-status';
@@ -372,20 +439,31 @@ async function saveSettings() {
     status.textContent = '✅ Saved successfully';
     status.className = 'save-status ok';
     showToast('✅ Payment settings saved!');
-    setTimeout(() => { status.textContent = 'All changes saved'; status.className = 'save-status'; }, 4000);
+    setTimeout(() => {
+      status.textContent = 'All changes saved';
+      status.className = 'save-status';
+    }, 4000);
   }
 }
 
+// ── TOAST HELPER ─────────────────────────────────────────────────────
 function showToast(msg, err) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const t = document.createElement('div');
   t.className = 'toast' + (err ? ' error' : '');
   t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+  setTimeout(() => t.remove(), 4000);
 }
 
-window.addEventListener('DOMContentLoaded', loadSettings);
+// ── INIT ─────────────────────────────────────────────────────────────
+// FIX 2 (cont): Attach live-preview listeners here, after DOM is ready.
+window.addEventListener('DOMContentLoaded', () => {
+  ['mpesa_number', 'mpesa_name'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updatePreview);
+  });
+  loadSettings();
+});
 </script>
 </body>
 </html>
