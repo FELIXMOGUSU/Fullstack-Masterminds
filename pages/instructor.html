@@ -439,7 +439,6 @@ tbody td{padding:14px 16px;font-size:.875rem;color:var(--txt)}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────
 const SB_URL = 'https://dtawdhstvcklwyngatwa.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0YXdkaHN0dmNrbHd5bmdhdHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMDY2OTMsImV4cCI6MjA4ODg4MjY5M30.VHFPpU3MkBOBBoJtCk4c_27CmnhIHkYZpPMc2AefqbA';
 
@@ -451,43 +450,88 @@ const COURSES = {
   'ecommerce': { name:'E-Commerce Mastery',    total:10, color:'#ff5252', icon:'🛒' },
 };
 
-// ── STATE ─────────────────────────────────────────────────────────
-let sb, allStudents = [], filtered = [], sortDir = {col:'progress', dir:-1};
+const COURSE_INFO = {
+  'web-dev':   { name:'Website Dev',  icon:'🌐', tier:'Advanced',     price:10000 },
+  'wordpress': { name:'WordPress',    icon:'🔷', tier:'Intermediate', price:5000  },
+  'seo':       { name:'SEO Mastery',  icon:'🔍', tier:'Intermediate', price:5000  },
+  'hosting':   { name:'Hosting',      icon:'🖥️', tier:'Beginner',     price:3000  },
+  'ecommerce': { name:'E-Commerce',   icon:'🛒', tier:'Advanced',     price:10000 },
+};
 
-// ── INIT ──────────────────────────────────────────────────────────
+let sb, allStudents = [], filtered = [], sortDir = { col:'progress', dir:-1 };
+let pendingAccess = {};
+
+// ═══════════════════════════════════════════════════════════════
+// DIAGNOSTIC — probes your actual DB and shows exactly what exists
+// This runs on every load so you can see real table/column names.
+// ═══════════════════════════════════════════════════════════════
+async function runDiagnostics(sb) {
+  const tables = [
+    'profiles','user_progress_summary','course_access',
+    'payment_settings','lesson_notes','users','students',
+    'progress','user_progress',
+  ];
+  let html = `<div style="background:#060e24;border:1px solid rgba(255,171,64,.35);
+    border-radius:10px;padding:20px 24px;margin-bottom:28px;
+    font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.8">
+    <div style="color:#ffab40;font-weight:700;margin-bottom:12px;font-size:.85rem">
+      🔍 LIVE DATABASE DIAGNOSTIC
+    </div>`;
+
+  for (const t of tables) {
+    const { data, error } = await sb.from(t).select('*').limit(2);
+    if (error) {
+      html += `<div style="color:#3a5a8a">✖ <b>${t}</b> — ${error.code}: ${error.message}</div>`;
+    } else {
+      const cols = data && data[0] ? Object.keys(data[0]).join(', ') : '(no rows yet)';
+      const cnt  = data ? data.length : 0;
+      html += `<div style="color:#00e676">✔ <b style="color:#fff">${t}</b>
+        — <span style="color:#ffab40">${cnt} row(s) visible to anon key</span><br>
+        <span style="color:#3d5a8a;padding-left:14px">cols: ${cols}</span></div>`;
+    }
+  }
+
+  const { data: authData } = await sb.auth.getUser();
+  const u = authData?.user;
+  html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(41,121,255,.15);color:#7a9cc8">
+    👤 Signed in as: <span style="color:#fff">${u ? u.email + ' — id: ' + u.id : 'NOT SIGNED IN (anon)'}</span>
+  </div></div>`;
+
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  document.getElementById('stats-row').before(wrap);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', async () => {
   if (!window.supabase) {
-    showError('Supabase SDK failed to load. Check your internet connection.');
-    return;
+    setStatus('⚠️ Supabase SDK failed to load.'); return;
   }
   sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  // Safe auth check
+  // Run diagnostics FIRST so you always see what's in the DB
+  await runDiagnostics(sb);
+
+  // Auth — warn but never block
   let user = null;
   try {
-    const { data, error } = await sb.auth.getUser();
-    if (error) throw error;
-    user = data?.user;
-  } catch(e) {
-    // Auth error — still allow access in case RLS is the issue;
-    // just proceed to load data and show whatever is accessible
-    console.warn('[FMM] Auth warning:', e.message);
-  }
+    const { data } = await sb.auth.getUser();
+    user = data?.user || null;
+  } catch(e) { console.warn('auth:', e.message); }
 
-  // Check profiles table for role — but NEVER block on it.
-  // If profiles table doesn't exist or returns no row, still show the dashboard.
+  // Role check — only block if role is explicitly a non-instructor value
   if (user) {
-    const { data: profile } = await sb
-      .from('profiles').select('role').eq('id', user.id).maybeSingle();
-    // Only block if profile explicitly says not instructor/admin
-    if (profile && profile.role && !['instructor','admin'].includes(profile.role)) {
-      document.querySelector('main').innerHTML = `
-        <div class="empty">
-          <div class="empty-icon">🔒</div>
-          <h2 style="color:#fff;font-family:var(--fhead);font-size:1.8rem">ACCESS RESTRICTED</h2>
-          <p style="margin-top:8px">This dashboard is for instructors only.</p>
-          <a href="dashboard.html" class="btn btn-primary" style="margin-top:24px;display:inline-flex">← Back to Dashboard</a>
-        </div>`;
+    const { data: prof } = await sb.from('profiles')
+      .select('role').eq('id', user.id).maybeSingle();
+    if (prof?.role && !['instructor','admin'].includes(prof.role)) {
+      document.querySelector('main').innerHTML = `<div class="empty">
+        <div class="empty-icon">🔒</div>
+        <h2 style="color:#fff;font-family:var(--fhead);font-size:1.8rem">ACCESS RESTRICTED</h2>
+        <p>This dashboard is for instructors only.</p>
+        <a href="dashboard.html" class="btn btn-primary" style="margin-top:20px;display:inline-flex">← Back</a>
+      </div>`;
       return;
     }
   }
@@ -495,52 +539,82 @@ window.addEventListener('DOMContentLoaded', async () => {
   loadAllStudents();
 });
 
-// ── LOAD DATA ─────────────────────────────────────────────────────
-// STRATEGY: user_progress_summary is the primary source.
-// It stores { user_id, full_name, email, progress_data, updated_at }
-// from the syncP() call in the lesson system.
-// We read every row from that table — each row IS a student.
-// The profiles table is only used as a fallback for name/email if missing.
+// ═══════════════════════════════════════════════════════════════
+// LOAD ALL STUDENTS
+// Strategy: try user_progress_summary first (has full_name, email,
+// progress_data). Fall back to profiles if that is empty.
+// Merge both so nothing is missed.
+// ═══════════════════════════════════════════════════════════════
 async function loadAllStudents() {
-  document.getElementById('student-tbody').innerHTML =
-    '<tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr>';
-  document.getElementById('sub-text').textContent = 'Loading student data…';
+  setSpinner();
 
   try {
-    // PRIMARY: Read all rows from user_progress_summary
-    const { data: progressRows, error: progressErr } = await sb
+    // ── Pull from user_progress_summary ──────────────────────
+    const { data: progRows, error: pe } = await sb
       .from('user_progress_summary')
-      .select('user_id, full_name, email, progress_data, updated_at')
+      .select('*')
       .order('updated_at', { ascending: false });
 
-    if (progressErr) throw new Error('user_progress_summary: ' + progressErr.message);
+    if (pe) console.warn('user_progress_summary error:', pe.message);
 
-    const rows = progressRows || [];
-
-    // FALLBACK: Also try profiles table to supplement name/email
-    // (won't crash if it doesn't exist — we use maybeSingle pattern)
-    const { data: profileRows } = await sb
+    // ── Pull from profiles ────────────────────────────────────
+    const { data: profRows, error: pre } = await sb
       .from('profiles')
-      .select('id, full_name, email, created_at');
-    const profileMap = {};
-    (profileRows || []).forEach(p => { profileMap[p.id] = p; });
+      .select('*');
 
-    // Build student objects — one per progress row
-    allStudents = rows.map(row => {
-      const profile    = profileMap[row.user_id] || {};
-      // Use name/email from progress row first (written by syncP),
-      // fall back to profiles table, then to sensible defaults
-      const name       = row.full_name || profile.full_name || row.email?.split('@')[0] || 'Unknown';
-      const email      = row.email     || profile.email     || '—';
-      const enrolled   = profile.created_at || row.updated_at || null;
-      const lastActive = row.updated_at || null;
-      const data       = row.progress_data || {};
+    if (pre) console.warn('profiles error:', pre.message);
+
+    const progressList = progRows  || [];
+    const profileList  = profRows  || [];
+
+    // Build lookup maps
+    const progByUser = {};
+    progressList.forEach(r => { progByUser[r.user_id] = r; });
+
+    const profByUser = {};
+    profileList.forEach(r => { profByUser[r.id] = r; });
+
+    // Merge: start with all user IDs seen in either table
+    const allUserIds = new Set([
+      ...progressList.map(r => r.user_id),
+      ...profileList.map(r => r.id),
+    ]);
+
+    allStudents = Array.from(allUserIds).map(uid => {
+      const prog = progByUser[uid] || {};
+      const prof = profByUser[uid] || {};
+
+      // Resolve name — check every possible column name
+      const name =
+        prog.full_name || prog.name ||
+        prof.full_name || prof.name ||
+        prog.email?.split('@')[0] ||
+        prof.email?.split('@')[0] ||
+        'Unknown';
+
+      // Resolve email
+      const email =
+        prog.email || prof.email || '—';
+
+      // Resolve enrolled date
+      const enrolled =
+        prof.created_at || prog.created_at || prog.updated_at || null;
+
+      // Resolve last active
+      const lastActive = prog.updated_at || null;
+
+      // Resolve progress data — could be stored as progress_data or data
+      const rawData =
+        prog.progress_data || prog.data || prog.progress || {};
 
       // Calculate per-course completions
       const courses = {};
       let totalDone = 0, totalPossible = 0;
       Object.entries(COURSES).forEach(([cid, info]) => {
-        const done = Object.values(data[cid] || {}).flat().length;
+        let done = 0;
+        if (typeof rawData === 'object' && rawData[cid]) {
+          done = Object.values(rawData[cid]).flat().length;
+        }
         courses[cid] = { done, total: info.total, pct: Math.round(done / info.total * 100) };
         totalDone     += done;
         totalPossible += info.total;
@@ -550,39 +624,38 @@ async function loadAllStudents() {
       const daysSince  = lastActive
         ? Math.floor((Date.now() - new Date(lastActive)) / 86400000)
         : 999;
-      const status = !lastActive         ? 'new'
-                   : daysSince <= 7      ? 'active'
+      const status = !lastActive    ? 'new'
+                   : daysSince <= 7 ? 'active'
                    : 'idle';
 
       return {
-        id: row.user_id, name, email, enrolled, lastActive, daysSince,
-        courses, overallPct, totalDone, status, rawProgress: data,
+        id: uid, name, email, enrolled, lastActive, daysSince,
+        courses, overallPct, totalDone, status, rawProgress: rawData,
       };
     });
+
+    // Exclude the instructor's own account if signed in
+    const { data: authData } = await sb.auth.getUser();
+    const myId = authData?.user?.id;
+    if (myId) allStudents = allStudents.filter(s => s.id !== myId);
 
     filtered = [...allStudents];
     renderStats();
     renderTable();
-    document.getElementById('sub-text').textContent =
-      `${allStudents.length} student${allStudents.length !== 1 ? 's' : ''} enrolled · refreshed ${new Date().toLocaleTimeString()}`;
-
-    if (allStudents.length === 0) {
-      document.getElementById('sub-text').textContent =
-        '⚠️ No progress records found in user_progress_summary. Students must complete at least one lesson for their data to appear here.';
-    }
+    setStatus(`${allStudents.length} student${allStudents.length !== 1 ? 's' : ''} found · refreshed ${new Date().toLocaleTimeString()}`);
 
   } catch(err) {
-    showError('Error loading data: ' + err.message);
+    document.getElementById('student-tbody').innerHTML =
+      `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger)">
+        ⚠️ ${esc(err.message)}
+      </td></tr>`;
+    setStatus('⚠️ Error — see table for details');
   }
 }
 
-function showError(msg) {
-  const el = document.getElementById('student-tbody');
-  if (el) el.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger)">⚠️ ${msg}</td></tr>`;
-  document.getElementById('sub-text').textContent = '⚠️ ' + msg;
-}
-
-// ── STATS ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════════════
 function renderStats() {
   const total    = allStudents.length;
   const active   = allStudents.filter(s => s.status === 'active').length;
@@ -590,35 +663,39 @@ function renderStats() {
   const completed = allStudents.filter(s => s.overallPct === 100).length;
   const lessons  = allStudents.reduce((a,s) => a + s.totalDone, 0);
 
-  document.getElementById('s-total').textContent = total;
-  document.getElementById('s-active').textContent = active;
-  document.getElementById('s-avg').innerHTML = `${avgComp}<span>%</span>`;
+  document.getElementById('s-total').textContent    = total;
+  document.getElementById('s-active').textContent   = active;
+  document.getElementById('s-avg').innerHTML        = `${avgComp}<span>%</span>`;
   document.getElementById('s-complete').textContent = completed;
-  document.getElementById('s-lessons').textContent = lessons;
+  document.getElementById('s-lessons').textContent  = lessons;
 }
 
-// ── TABLE RENDER ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// TABLE RENDER
+// ═══════════════════════════════════════════════════════════════
 function renderTable() {
   const tbody = document.getElementById('student-tbody');
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">🎓</div><p>No students match your filters.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
+      <div class="empty-icon">🎓</div>
+      <p>No students found. Check the diagnostic panel above for table status.</p>
+    </div></td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.map(s => {
-    const initials = s.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() || '??';
-    const enrolled = s.enrolled ? new Date(s.enrolled).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
-    const lastSeen = s.lastActive
-      ? (s.daysSince === 0 ? 'Today' : s.daysSince === 1 ? 'Yesterday' : `${s.daysSince}d ago`)
-      : 'Never';
-    const statusMap = {active:'status-active',idle:'status-idle',new:'status-new'};
-    const statusLabel = {active:'● Active',idle:'○ Idle',new:'✦ New'};
+    const initials  = s.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() || '??';
+    const enrolled  = s.enrolled ? new Date(s.enrolled).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    const lastSeen  = !s.lastActive ? 'Never'
+                    : s.daysSince === 0 ? 'Today'
+                    : s.daysSince === 1 ? 'Yesterday'
+                    : `${s.daysSince}d ago`;
+    const statusMap   = { active:'status-active', idle:'status-idle', new:'status-new' };
+    const statusLabel = { active:'● Active', idle:'○ Idle', new:'✦ New' };
 
-    // Course progress mini-bars (show top 3 most progressed)
     const topCourses = Object.entries(s.courses)
       .filter(([,v]) => v.pct > 0)
-      .sort((a,b) => b[1].pct - a[1].pct)
-      .slice(0,3);
+      .sort((a,b) => b[1].pct - a[1].pct).slice(0,3);
 
     const barsHtml = topCourses.length
       ? topCourses.map(([cid,v]) => `
@@ -658,22 +735,24 @@ function renderTable() {
       <td><span class="status ${statusMap[s.status]}">${statusLabel[s.status]}</span></td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="export-btn" onclick="event.stopPropagation();openDrawer('${s.id}')">View →</button>
-        <button class="export-btn" style="background:rgba(0,230,118,.08);border-color:rgba(0,230,118,.25);color:var(--ok)" onclick="grantAllAccess('${s.id}',event)" title="Grant full access to all courses">✅ Grant</button>
+        <button class="export-btn" style="background:rgba(0,230,118,.08);border-color:rgba(0,230,118,.25);color:var(--ok)"
+          onclick="grantAllAccess('${s.id}',event)" title="Grant full access">✅ Grant</button>
       </td>
     </tr>`;
   }).join('');
 }
 
-// ── FILTER & SORT ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// FILTER & SORT
+// ═══════════════════════════════════════════════════════════════
 function filterTable() {
-  const q       = document.getElementById('search-inp').value.toLowerCase();
-  const course  = document.getElementById('course-filter').value;
-  const status  = document.getElementById('status-filter').value;
-
+  const q      = document.getElementById('search-inp').value.toLowerCase();
+  const course = document.getElementById('course-filter').value;
+  const status = document.getElementById('status-filter').value;
   filtered = allStudents.filter(s => {
-    const matchQ  = !q || s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q);
-    const matchC  = !course || s.courses[course]?.pct > 0;
-    const matchS  = !status || s.status === status;
+    const matchQ = !q || s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q);
+    const matchC = !course || s.courses[course]?.pct > 0;
+    const matchS = !status || s.status === status;
     return matchQ && matchC && matchS;
   });
   applySort();
@@ -683,83 +762,71 @@ function filterTable() {
 function sortBy(col) {
   if (sortDir.col === col) sortDir.dir *= -1;
   else { sortDir.col = col; sortDir.dir = -1; }
-  document.querySelectorAll('thead th').forEach(th => {
-    th.classList.remove('sort-asc','sort-desc');
-  });
-  applySort();
-  renderTable();
+  applySort(); renderTable();
 }
 
 function applySort() {
   filtered.sort((a,b) => {
     let va, vb;
     switch(sortDir.col) {
-      case 'name':     va = a.name; vb = b.name; break;
-      case 'enrolled': va = a.enrolled||''; vb = b.enrolled||''; break;
+      case 'name':     va = a.name;           vb = b.name;           break;
+      case 'enrolled': va = a.enrolled || ''; vb = b.enrolled || ''; break;
       case 'last':     va = a.lastActive||''; vb = b.lastActive||''; break;
-      default:         va = a.overallPct; vb = b.overallPct;
+      default:         va = a.overallPct;     vb = b.overallPct;
     }
-    if (va < vb) return sortDir.dir;
-    if (va > vb) return -sortDir.dir;
-    return 0;
+    return va < vb ? sortDir.dir : va > vb ? -sortDir.dir : 0;
   });
 }
 
-// ── DRAWER ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// DRAWER
+// ═══════════════════════════════════════════════════════════════
 async function openDrawer(userId) {
   const s = allStudents.find(x => x.id === userId);
   if (!s) return;
 
-  const initials = s.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() || '??';
-  document.getElementById('d-avatar').textContent = initials;
+  document.getElementById('d-avatar').textContent = s.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
   document.getElementById('d-name').textContent   = s.name;
   document.getElementById('d-email').textContent  = s.email;
 
-  const enrolled = s.enrolled ? new Date(s.enrolled).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : 'Unknown';
+  const enrolled = s.enrolled
+    ? new Date(s.enrolled).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})
+    : 'Unknown';
   document.getElementById('d-meta').innerHTML = `
     <span class="meta-chip">📅 Joined ${enrolled}</span>
     <span class="meta-chip">📚 ${s.totalDone} lessons</span>
     <span class="meta-chip">🎯 ${s.overallPct}% overall</span>`;
 
-  // Course cards
   const courseCards = Object.entries(COURSES).map(([cid, info]) => {
     const cv = s.courses[cid];
-    return `
-      <div class="course-card">
-        <div class="course-card-head">
-          <span class="course-card-name">${info.icon} ${info.name}</span>
-          <span class="course-card-pct" style="color:${info.color}">${cv.pct}%</span>
-        </div>
-        <div class="course-track">
-          <div class="course-fill" style="width:${cv.pct}%;background:${info.color}"></div>
-        </div>
-        <div style="font-size:.78rem;color:var(--txtd);font-family:var(--fmono)">${cv.done} / ${cv.total} lessons complete</div>
-      </div>`;
+    return `<div class="course-card">
+      <div class="course-card-head">
+        <span class="course-card-name">${info.icon} ${info.name}</span>
+        <span class="course-card-pct" style="color:${info.color}">${cv.pct}%</span>
+      </div>
+      <div class="course-track">
+        <div class="course-fill" style="width:${cv.pct}%;background:${info.color}"></div>
+      </div>
+      <div style="font-size:.78rem;color:var(--txtd);font-family:var(--fmono)">${cv.done} / ${cv.total} lessons complete</div>
+    </div>`;
   }).join('');
 
-  // Activity timeline from raw progress data
-  const timeline = buildTimeline(s.rawProgress, s.lastActive);
-
-  // Load access state for this student
   const accessData = await loadStudentAccess(s.id);
+  const timeline   = buildTimeline(s.rawProgress, s.lastActive);
 
   document.getElementById('drawer-body').innerHTML = `
     <div class="section-title">COURSE PROGRESS</div>
     ${courseCards}
     <div class="section-title">ACCESS & PAYMENTS</div>
-    <p style="color:var(--txtm);font-size:.85rem;margin-bottom:14px">
-      Toggle to grant or revoke paid access for each course. Students are notified immediately.
-    </p>
-    <div class="access-grid" id="access-grid-${s.id}">
-      ${buildAccessCards(s.id, accessData)}
-    </div>
+    <p style="color:var(--txtm);font-size:.85rem;margin-bottom:14px">Toggle to grant or revoke paid course access.</p>
+    <div class="access-grid">${buildAccessCards(s.id, accessData)}</div>
     <button class="save-access-btn" onclick="saveAccess('${s.id}')">💾 Save Access Changes</button>
     <div class="access-saving" id="access-saving-${s.id}"></div>
-    <div class="section-title" style="margin-top:24px">COMPLETION DETAIL</div>
+    <div class="section-title" style="margin-top:24px">LESSON COMPLETION</div>
     ${buildLessonGrid(s.rawProgress)}
     <div class="section-title">ACTIVITY</div>
     <ul class="timeline">${timeline}</ul>
-    <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap">
+    <div style="margin-top:24px">
       <button class="export-btn" onclick="exportStudentCSV('${s.id}')">⬇ Export This Student</button>
     </div>`;
 
@@ -776,15 +843,16 @@ function buildLessonGrid(rawProgress) {
   return Object.entries(COURSES).map(([cid, info]) => {
     const mods = rawProgress[cid] || {};
     const dots = Object.entries(mods).map(([mid, lids]) =>
-      lids.map(lid => `<div class="dot done" title="${mid}/${lid}"></div>`).join('')
+      (Array.isArray(lids) ? lids : []).map(lid =>
+        `<div class="dot done" title="${mid}/${lid}"></div>`
+      ).join('')
     ).join('');
-    const done  = Object.values(mods).flat().length;
-    return `
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-        <span style="font-size:.75rem;color:var(--txtd);font-family:var(--fmono);min-width:22px">${info.icon}</span>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;flex:1">${dots || '<span style="color:var(--txtd);font-size:.72rem;font-family:var(--fmono)">No lessons completed</span>'}</div>
-        <span style="font-family:var(--fmono);font-size:.72rem;color:var(--txtm);min-width:40px;text-align:right">${done}/${info.total}</span>
-      </div>`;
+    const done = Object.values(mods).flat().length;
+    return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <span style="font-size:.75rem;color:var(--txtd);font-family:var(--fmono);min-width:22px">${info.icon}</span>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;flex:1">${dots || '<span style="color:var(--txtd);font-size:.72rem;font-family:var(--fmono)">No lessons completed</span>'}</div>
+      <span style="font-family:var(--fmono);font-size:.72rem;color:var(--txtm);min-width:40px;text-align:right">${done}/${info.total}</span>
+    </div>`;
   }).join('');
 }
 
@@ -792,19 +860,19 @@ function buildTimeline(rawProgress, lastActive) {
   const events = [];
   Object.entries(COURSES).forEach(([cid, info]) => {
     const done = Object.values(rawProgress[cid] || {}).flat().length;
-    if (done > 0) events.push({ label: `Completed ${done} lesson${done>1?'s':''} in <strong>${info.name}</strong>` });
+    if (done > 0) events.push(`Completed ${done} lesson${done>1?'s':''} in <strong>${info.name}</strong>`);
   });
 
-  if (!events.length) return '<li class="tl-item"><div class="tl-text" style="color:var(--txtd)">No activity recorded yet</div></li>';
+  if (!events.length) return `<li class="tl-item"><div class="tl-text" style="color:var(--txtd)">No activity recorded yet</div></li>`;
 
   const lastStr = lastActive
     ? new Date(lastActive).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
     : 'Unknown';
 
-  return events.map(e => `
+  return events.map(label => `
     <li class="tl-item">
       <div class="tl-time">${lastStr}</div>
-      <div class="tl-text">${e.label}</div>
+      <div class="tl-text">${label}</div>
     </li>`).join('') + `
     <li class="tl-item">
       <div class="tl-time">Enrolled</div>
@@ -812,7 +880,95 @@ function buildTimeline(rawProgress, lastActive) {
     </li>`;
 }
 
-// ── EXPORT ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// ACCESS MANAGEMENT
+// ═══════════════════════════════════════════════════════════════
+async function loadStudentAccess(userId) {
+  try {
+    const { data } = await sb.from('course_access').select('course_id,granted').eq('user_id', userId);
+    const map = {};
+    (data || []).forEach(r => { map[r.course_id] = r.granted; });
+    return map;
+  } catch(e) { return {}; }
+}
+
+function buildAccessCards(userId, accessMap) {
+  return Object.entries(COURSE_INFO).map(([cid, info]) => {
+    const granted = !!accessMap[cid];
+    return `<div class="access-card">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="access-card-icon">${info.icon}</span>
+        <span class="access-card-name">${info.name}</span>
+      </div>
+      <div class="access-toggle" onclick="toggleAccess('${userId}','${cid}',this)">
+        <span class="access-status ${granted?'paid':'free'}" id="acc-status-${userId}-${cid}">${granted?'✅ Access Granted':'⛔ Locked'}</span>
+        <div class="toggle-track ${granted?'on':''}" id="acc-toggle-${userId}-${cid}">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+      <div style="font-family:var(--fmono);font-size:.68rem;color:var(--txtd)">${info.tier} · KES ${info.price.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleAccess(userId, courseId) {
+  const track  = document.getElementById(`acc-toggle-${userId}-${courseId}`);
+  const status = document.getElementById(`acc-status-${userId}-${courseId}`);
+  const isOn   = track.classList.contains('on');
+  track.classList.toggle('on', !isOn);
+  status.textContent  = isOn ? '⛔ Locked' : '✅ Access Granted';
+  status.className    = 'access-status ' + (isOn ? 'free' : 'paid');
+  if (!pendingAccess[userId]) pendingAccess[userId] = {};
+  pendingAccess[userId][courseId] = !isOn;
+}
+
+async function saveAccess(userId) {
+  const saving  = document.getElementById(`access-saving-${userId}`);
+  const pending = pendingAccess[userId];
+  if (!pending || !Object.keys(pending).length) {
+    saving.textContent = 'No changes to save.';
+    setTimeout(() => saving.textContent = '', 2000);
+    return;
+  }
+  saving.textContent = '⏳ Saving…';
+  try {
+    const upserts = Object.entries(pending).map(([cid, granted]) => ({
+      user_id: userId, course_id: cid, granted, updated_at: new Date().toISOString(),
+    }));
+    const { error } = await sb.from('course_access').upsert(upserts, { onConflict: 'user_id,course_id' });
+    if (error) throw error;
+    pendingAccess[userId] = {};
+    saving.textContent = '✅ Access saved!';
+    setTimeout(() => saving.textContent = '', 4000);
+    await loadAllStudents();
+  } catch(err) {
+    saving.textContent = '❌ ' + err.message;
+  }
+}
+
+async function grantAllAccess(userId, event) {
+  event.stopPropagation();
+  const { error } = await sb.from('course_access').upsert(
+    Object.keys(COURSE_INFO).map(cid => ({
+      user_id: userId, course_id: cid, granted: true, updated_at: new Date().toISOString(),
+    })),
+    { onConflict: 'user_id,course_id' }
+  );
+  showGrantToast(error ? '❌ ' + error.message : '✅ Full access granted!');
+  if (!error) await loadAllStudents();
+}
+
+function showGrantToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;padding:12px 28px;border-radius:100px;font-family:"JetBrains Mono",monospace;font-size:.84rem;font-weight:700;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.4)';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════
 function exportCSV() {
   const rows = [['Name','Email','Enrolled','Last Active','Overall %','Status',
     ...Object.values(COURSES).map(c => c.name + ' %')]];
@@ -825,7 +981,7 @@ function exportCSV() {
       ...Object.keys(COURSES).map(cid => s.courses[cid].pct),
     ]);
   });
-  downloadCSV(rows, 'fmm-student-progress.csv');
+  downloadCSV(rows, 'fmm-students.csv');
 }
 
 function exportStudentCSV(userId) {
@@ -841,141 +997,21 @@ function exportStudentCSV(userId) {
 
 function downloadCSV(rows, filename) {
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = filename;
-  a.click();
+  const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename; a.click();
 }
 
-// ── UTIL ──────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setStatus(msg) { const el = document.getElementById('sub-text'); if(el) el.textContent = msg; }
+function setSpinner() {
+  document.getElementById('student-tbody').innerHTML =
+    '<tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr>';
+  setStatus('Loading…');
 }
 
-
-// ════════════════════════════════════════════════════════════════
-// ACCESS MANAGEMENT
-// ════════════════════════════════════════════════════════════════
-const COURSE_INFO = {
-  'web-dev':   { name:'Website Dev',    icon:'🌐', tier:'Advanced',     price:10000 },
-  'wordpress': { name:'WordPress',      icon:'🔷', tier:'Intermediate', price:5000  },
-  'seo':       { name:'SEO Mastery',    icon:'🔍', tier:'Intermediate', price:5000  },
-  'hosting':   { name:'Hosting',        icon:'🖥️', tier:'Beginner',     price:3000  },
-  'ecommerce': { name:'E-Commerce',     icon:'🛒', tier:'Advanced',     price:10000 },
-};
-
-let pendingAccess = {}; // { userId: { 'web-dev': true/false, ... } }
-
-async function loadStudentAccess(userId) {
-  try {
-    const { data } = await sb.from('course_access')
-      .select('course_id, granted')
-      .eq('user_id', userId);
-    const map = {};
-    (data || []).forEach(r => { map[r.course_id] = r.granted; });
-    return map;
-  } catch(e) { return {}; }
-}
-
-function buildAccessCards(userId, accessMap) {
-  return Object.entries(COURSE_INFO).map(([cid, info]) => {
-    const granted = !!accessMap[cid];
-    return `
-      <div class="access-card">
-        <div style="display:flex;align-items:center;gap:6px">
-          <span class="access-card-icon">${info.icon}</span>
-          <span class="access-card-name">${info.name}</span>
-        </div>
-        <div class="access-toggle" onclick="toggleAccess('${userId}','${cid}',this)">
-          <span class="access-status ${granted?'paid':'free'}" id="acc-status-${userId}-${cid}">${granted?'✅ Access Granted':'⛔ Locked'}</span>
-          <div class="toggle-track ${granted?'on':''}" id="acc-toggle-${userId}-${cid}">
-            <div class="toggle-thumb"></div>
-          </div>
-        </div>
-        <div style="font-family:var(--fmono);font-size:.68rem;color:var(--txtd)">
-          ${info.tier} · KES ${info.price.toLocaleString()}
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function toggleAccess(userId, courseId, el) {
-  const track  = document.getElementById(`acc-toggle-${userId}-${courseId}`);
-  const status = document.getElementById(`acc-status-${userId}-${courseId}`);
-  const isOn   = track.classList.contains('on');
-
-  if (isOn) {
-    track.classList.remove('on');
-    status.textContent = '⛔ Locked';
-    status.className = 'access-status free';
-  } else {
-    track.classList.add('on');
-    status.textContent = '✅ Access Granted';
-    status.className = 'access-status paid';
-  }
-
-  if (!pendingAccess[userId]) pendingAccess[userId] = {};
-  pendingAccess[userId][courseId] = !isOn;
-}
-
-async function saveAccess(userId) {
-  const saving = document.getElementById(`access-saving-${userId}`);
-  const pending = pendingAccess[userId];
-  if (!pending || Object.keys(pending).length === 0) {
-    saving.textContent = 'No changes to save.';
-    setTimeout(() => saving.textContent = '', 2000);
-    return;
-  }
-
-  saving.textContent = '⏳ Saving…';
-  try {
-    const upserts = Object.entries(pending).map(([cid, granted]) => ({
-      user_id: userId, course_id: cid, granted,
-      updated_at: new Date().toISOString(),
-    }));
-    const { error } = await sb.from('course_access').upsert(upserts, { onConflict: 'user_id,course_id' });
-    if (error) throw error;
-
-    // Update local student record
-    const student = allStudents.find(s => s.id === userId);
-    if (student) Object.assign(student.access || (student.access = {}), pending);
-
-    pendingAccess[userId] = {};
-    saving.textContent = '✅ Access saved! Student can now proceed.';
-    setTimeout(() => saving.textContent = '', 4000);
-    await loadAllStudents();
-  } catch(err) {
-    saving.textContent = '❌ Error: ' + err.message;
-  }
-}
-
-// Quick grant all access button from table row
-async function grantAllAccess(userId, event) {
-  event.stopPropagation();
-  const { error } = await sb.from('course_access').upsert(
-    Object.keys(COURSE_INFO).map(cid => ({
-      user_id: userId, course_id: cid, granted: true,
-      updated_at: new Date().toISOString(),
-    })),
-    { onConflict: 'user_id,course_id' }
-  );
-  if (!error) {
-    showGrantToast('✅ Full access granted!');
-    await loadAllStudents();
-  } else {
-    showGrantToast('❌ Error: ' + error.message);
-  }
-}
-
-function showGrantToast(msg) {
-  const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;padding:12px 28px;border-radius:100px;font-family:"JetBrains Mono",monospace;font-size:.84rem;font-weight:700;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.4)';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
-
-// Close drawer on Escape
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 </script>
 </body>
