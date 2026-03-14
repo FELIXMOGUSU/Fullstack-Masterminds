@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile — FMM Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#020818;--bg1:#040d1e;--bg2:#071430;--bgc:#0a1a3a;
+  --bdr:rgba(30,80,180,.22);--bdr2:rgba(60,130,255,.45);
+  --blue:#2979ff;--blueg:#4d94ff;--bluel:#7ab3ff;--blueu:#00c3ff;
+  --white:#fff;--txt:#e8f0ff;--txtm:#8baad4;--txtd:#3d5a8a;
+  --ok:#00e676;--warn:#ffab40;--danger:#ff5252;
+  --grad:linear-gradient(135deg,#1557e8,#2979ff,#00c3ff);
+  --r:12px;--sh:0 8px 40px rgba(0,0,0,.5);
+  --glow:0 0 40px rgba(41,121,255,.3);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg0);color:var(--txt);font-family:'Outfit',sans-serif;line-height:1.6;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+
+/* ── NAV ── */
+.nav{position:sticky;top:0;z-index:100;background:rgba(2,8,24,.92);border-bottom:1px solid var(--bdr);backdrop-filter:blur(16px);padding:0 40px;height:70px;display:flex;align-items:center}
+.ni{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:1280px;margin:0 auto}
+.logo{display:flex;align-items:center;gap:12px;cursor:pointer}
+.lbox{background:var(--grad);width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:#fff;letter-spacing:.05em}
+.ltxt{display:flex;flex-direction:column;line-height:1}
+.lm{font-family:'Bebas Neue',sans-serif;font-size:.95rem;letter-spacing:.12em;color:var(--white)}
+.ls{font-size:.62rem;color:var(--txtm);letter-spacing:.15em}
+.nl{display:flex;align-items:center;gap:8px;list-style:none}
+.nl a{padding:8px 16px;border-radius:8px;font-size:.88rem;color:var(--txtm);transition:all .2s;font-weight:500}
+.nl a:hover,.nl a.active{color:var(--white);background:rgba(41,121,255,.12)}
+.ncta{background:var(--grad)!important;color:#fff!important;padding:8px 20px!important;border-radius:8px!important;font-weight:600!important}
+.nav-avatar{width:36px;height:36px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1rem;color:#fff;cursor:pointer;border:2px solid rgba(41,121,255,.4)}
+.hbg{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:5px;padding:4px}
+.hbg span{display:block;width:22px;height:2px;background:var(--txtm);border-radius:2px;transition:var(--tr)}
+@media(max-width:768px){
+  .nl{display:none;position:fixed;inset:70px 0 0;background:rgba(2,8,24,.98);flex-direction:column;padding:24px;gap:4px;backdrop-filter:blur(20px)}
+  .nl.open{display:flex}
+  .nl a{padding:14px 20px;font-size:1rem;border-radius:10px}
+  .hbg{display:flex}
+  .nav{padding:0 20px}
+}
+
+/* ── LAYOUT ── */
+main{max-width:1100px;margin:0 auto;padding:48px 28px 80px}
+
+/* ── PROFILE HERO ── */
+.profile-hero{
+  background:linear-gradient(135deg,rgba(7,20,48,.95),rgba(10,26,58,.9));
+  border:1px solid var(--bdr);border-radius:20px;
+  padding:40px 44px;margin-bottom:32px;
+  display:flex;align-items:center;gap:32px;flex-wrap:wrap;
+  position:relative;overflow:hidden;
+}
+.profile-hero::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(41,121,255,.12),transparent 70%);
+  pointer-events:none;
+}
+.profile-avatar-wrap{position:relative;flex-shrink:0}
+.profile-avatar{
+  width:96px;height:96px;border-radius:50%;
+  background:var(--grad);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:2.4rem;color:#fff;
+  border:3px solid rgba(41,121,255,.4);
+  box-shadow:0 0 32px rgba(41,121,255,.3);
+}
+.profile-badge{
+  position:absolute;bottom:0;right:0;
+  background:var(--ok);width:22px;height:22px;border-radius:50%;
+  border:2px solid var(--bg0);display:flex;align-items:center;justify-content:center;
+  font-size:.65rem;
+}
+.profile-info{flex:1;min-width:200px}
+.profile-name{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--white);letter-spacing:.06em;line-height:1}
+.profile-email{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--txtm);margin-top:6px}
+.profile-joined{font-size:.8rem;color:var(--txtd);margin-top:4px}
+.profile-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.tag{
+  background:rgba(41,121,255,.1);border:1px solid rgba(41,121,255,.25);
+  color:var(--bluel);font-family:'JetBrains Mono',monospace;font-size:.72rem;
+  padding:4px 12px;border-radius:100px;letter-spacing:.04em;
+}
+.tag.gold{background:rgba(255,171,64,.1);border-color:rgba(255,171,64,.3);color:var(--warn)}
+.tag.green{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.3);color:var(--ok)}
+.profile-hero-actions{display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'Outfit',sans-serif;font-size:.88rem;font-weight:600;
+  padding:10px 22px;border-radius:10px;border:none;cursor:pointer;
+  transition:all .22s;text-decoration:none;white-space:nowrap;
+}
+.btn-primary{background:var(--grad);color:#fff;box-shadow:0 6px 24px rgba(41,121,255,.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(41,121,255,.5)}
+.btn-ghost{background:transparent;border:1px solid var(--bdr2);color:var(--txtm)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--white)}
+.btn-instructor{background:rgba(255,171,64,.1);border:1px solid rgba(255,171,64,.3);color:var(--warn)}
+.btn-instructor:hover{background:rgba(255,171,64,.18);transform:translateY(-1px)}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;margin-bottom:32px}
+.stat-card{
+  background:var(--bg1);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:22px 20px;text-align:center;transition:border-color .2s;
+}
+.stat-card:hover{border-color:var(--bdr2)}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;color:var(--white);letter-spacing:.04em;line-height:1}
+.stat-num span{font-size:1.4rem;color:var(--blue)}
+.stat-lbl{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--txtm);letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+
+/* ── SECTION TITLE ── */
+.sec-title{
+  font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--txtm);
+  letter-spacing:.12em;text-transform:uppercase;margin-bottom:16px;
+  display:flex;align-items:center;gap:12px;
+}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--bdr)}
+
+/* ── PROGRESS CARDS ── */
+.course-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:32px}
+.course-card{
+  background:var(--bg1);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:22px 24px;transition:all .22s;cursor:pointer;
+  text-decoration:none;display:block;
+}
+.course-card:hover{border-color:var(--bdr2);transform:translateY(-2px);box-shadow:var(--glow)}
+.cc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.cc-icon{font-size:1.5rem}
+.cc-pct{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:.04em}
+.cc-name{font-size:.95rem;font-weight:600;color:var(--white);margin-bottom:4px}
+.cc-lessons{font-size:.78rem;color:var(--txtm);font-family:'JetBrains Mono',monospace}
+.cc-track{height:6px;background:rgba(255,255,255,.07);border-radius:100px;overflow:hidden;margin:12px 0 8px}
+.cc-fill{height:100%;border-radius:100px;transition:width .6s ease}
+.cc-status{font-size:.75rem;font-family:'JetBrains Mono',monospace}
+.cc-status.complete{color:var(--ok)}
+.cc-status.inprogress{color:var(--blue)}
+.cc-status.locked{color:var(--txtd)}
+.cert-btn{
+  display:inline-flex;align-items:center;gap:6px;margin-top:10px;
+  background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);
+  color:var(--ok);font-size:.78rem;font-family:'JetBrains Mono',monospace;
+  padding:5px 14px;border-radius:6px;cursor:pointer;transition:all .2s;
+}
+.cert-btn:hover{background:rgba(0,230,118,.2)}
+
+/* ── INSTRUCTOR CONTACT ── */
+.instructor-card{
+  background:linear-gradient(135deg,rgba(10,26,58,.95),rgba(7,20,48,.9));
+  border:1px solid var(--bdr2);border-radius:20px;
+  padding:36px 40px;margin-bottom:32px;
+  display:flex;align-items:center;gap:32px;flex-wrap:wrap;
+  position:relative;overflow:hidden;
+}
+.instructor-card::before{
+  content:'INSTRUCTOR';position:absolute;right:32px;top:24px;
+  font-family:'Bebas Neue',sans-serif;font-size:.7rem;letter-spacing:.2em;
+  color:rgba(41,121,255,.2);
+}
+.instructor-avatar{
+  width:72px;height:72px;flex-shrink:0;border-radius:16px;
+  background:var(--grad);display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:#fff;
+  box-shadow:0 0 28px rgba(41,121,255,.35);
+}
+.instructor-info{flex:1;min-width:180px}
+.instructor-info h3{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--white);letter-spacing:.05em}
+.instructor-info p{font-size:.85rem;color:var(--txtm);margin-top:4px}
+.contact-chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.contact-chip{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(41,121,255,.08);border:1px solid rgba(41,121,255,.2);
+  padding:9px 16px;border-radius:10px;font-size:.85rem;color:var(--txt);
+  cursor:pointer;transition:all .2s;text-decoration:none;
+}
+.contact-chip:hover{background:rgba(41,121,255,.15);border-color:var(--blue)}
+.contact-chip strong{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--blue);display:block}
+.instructor-actions{display:flex;flex-direction:column;gap:10px;flex-shrink:0}
+
+/* ── REQUEST CALL MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(2,8,24,.8);
+  backdrop-filter:blur(6px);z-index:300;
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--bg1);border:1px solid var(--bdr2);border-radius:20px;
+  padding:40px;max-width:480px;width:100%;
+  box-shadow:0 32px 80px rgba(0,0,0,.6),var(--glow);
+}
+.modal h2{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--white);letter-spacing:.06em;margin-bottom:8px}
+.modal p{font-size:.88rem;color:var(--txtm);margin-bottom:24px;line-height:1.65}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.form-group label{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--txtm);letter-spacing:.08em;text-transform:uppercase}
+.form-group input,.form-group select,.form-group textarea{
+  background:var(--bg2);border:1px solid rgba(41,121,255,.2);
+  color:var(--txt);font-family:'Outfit',sans-serif;font-size:.9rem;
+  padding:11px 14px;border-radius:8px;transition:border-color .2s;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--blue)}
+.form-group input::placeholder,.form-group textarea::placeholder{color:var(--txtd)}
+.modal-actions{display:flex;gap:12px;margin-top:8px}
+.close-modal{
+  background:rgba(255,255,255,.06);border:none;color:var(--txtm);
+  width:32px;height:32px;border-radius:8px;cursor:pointer;
+  font-size:1.1rem;position:absolute;top:16px;right:16px;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:32px;right:32px;
+  background:linear-gradient(135deg,#1557e8,#2979ff);color:#fff;
+  padding:14px 26px;border-radius:100px;font-weight:700;
+  font-family:'JetBrains Mono',monospace;font-size:.84rem;
+  box-shadow:0 8px 32px rgba(41,121,255,.5);z-index:9999;
+  animation:slideUp .3s ease;
+}
+.toast.success{background:linear-gradient(135deg,#1b5e20,#2e7d32)}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg0)}
+::-webkit-scrollbar-thumb{background:rgba(41,121,255,.3);border-radius:3px}
+
+@media(max-width:640px){
+  main{padding:28px 16px 60px}
+  .profile-hero{padding:28px 24px;flex-direction:column;align-items:flex-start}
+  .profile-hero-actions{align-items:flex-start;width:100%;flex-direction:row;flex-wrap:wrap}
+  .instructor-card{padding:24px;flex-direction:column;align-items:flex-start}
+  .instructor-actions{flex-direction:row;flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="ni">
+    <a href="https://felixmogusu.github.io/Fullstack-Masterminds/" class="logo">
+      <div class="lbox">FMM</div>
+      <div class="ltxt"><span class="lm">FULLSTACK</span><span class="ls">MASTERMINDS</span></div>
+    </a>
+    <ul class="nl" id="nl">
+      <li><a href="https://felixmogusu.github.io/Fullstack-Masterminds/pages/courses.html">Courses</a></li>
+      <li><a href="https://felixmogusu.github.io/Fullstack-Masterminds/pages/dashboard.html">Dashboard</a></li>
+      <li><a href="https://felixmogusu.github.io/Fullstack-Masterminds/pages/profile.html" class="active">Profile</a></li>
+      <li><a href="https://felixmogusu.github.io/Fullstack-Masterminds/pages/certificates.html">Certificates</a></li>
+      <li id="nav-instructor-li" style="display:none"><a href="https://felixmogusu.github.io/Fullstack-Masterminds/pages/instructor.html" class="ncta">Instructor Panel →</a></li>
+      <li id="nav-signin-li"><a href="https://felixmogusu.github.io/Fullstack-Masterminds/pages/login.html">Sign In</a></li>
+    </ul>
+    <div id="nav-avatar" class="nav-avatar" style="display:none" onclick="location.href='profile.html'">S</div>
+    <button class="hbg" id="hbg"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- PROFILE HERO -->
+  <div class="profile-hero">
+    <div class="profile-avatar-wrap">
+      <div class="profile-avatar" id="p-avatar">S</div>
+      <div class="profile-badge">✓</div>
+    </div>
+    <div class="profile-info">
+      <div class="profile-name" id="p-name">Loading…</div>
+      <div class="profile-email" id="p-email"></div>
+      <div class="profile-joined" id="p-joined"></div>
+      <div class="profile-tags" id="p-tags"></div>
+    </div>
+    <div class="profile-hero-actions">
+      <a href="certificates.html" class="btn btn-primary">🏆 My Certificates</a>
+      <button class="btn btn-ghost" onclick="doLogout()">Sign Out</button>
+      <a id="instructor-panel-btn" href="instructor.html" class="btn btn-instructor" style="display:none">⚡ Instructor Panel</a>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="s-overall">0<span>%</span></div>
+      <div class="stat-lbl">Overall Progress</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-lessons">0</div>
+      <div class="stat-lbl">Lessons Complete</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-courses">0</div>
+      <div class="stat-lbl">Courses Started</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-complete">0</div>
+      <div class="stat-lbl">Courses Finished</div>
+    </div>
+  </div>
+
+  <!-- COURSE PROGRESS -->
+  <div class="sec-title">COURSE PROGRESS</div>
+  <div class="course-grid" id="course-grid"></div>
+
+  <!-- INSTRUCTOR CONTACT -->
+  <div class="sec-title">YOUR INSTRUCTOR</div>
+  <div class="instructor-card" id="instructor-card">
+    <div class="instructor-avatar" id="inst-avatar">F</div>
+    <div class="instructor-info">
+      <h3 id="inst-name">FMM Instructor</h3>
+      <p id="inst-bio">Your guide through the Fullstack Masterminds curriculum. Reach out any time for guidance, mentorship, or career advice.</p>
+      <div class="contact-chips" id="contact-chips">
+        <a class="contact-chip" id="chip-email" href="#">
+          <span>📧</span>
+          <div><strong>EMAIL</strong><span id="inst-email-val">Loading…</span></div>
+        </a>
+        <a class="contact-chip" id="chip-wa" href="#" target="_blank">
+          <span>💬</span>
+          <div><strong>WHATSAPP</strong><span id="inst-wa-val">Loading…</span></div>
+        </a>
+      </div>
+    </div>
+    <div class="instructor-actions">
+      <button class="btn btn-primary" onclick="openCallModal()">📞 Request a Call</button>
+      <button class="btn btn-ghost" onclick="openEmailModal()">✉️ Send a Message</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- REQUEST CALL MODAL -->
+<div class="modal-overlay" id="call-modal">
+  <div class="modal" style="position:relative">
+    <button class="close-modal" onclick="closeModal('call-modal')">✕</button>
+    <h2>REQUEST A CALL</h2>
+    <p>Fill in your details and the instructor will call you back at a convenient time.</p>
+    <div class="form-group">
+      <label>Your Name</label>
+      <input type="text" id="call-name" placeholder="Felix Mogusu">
+    </div>
+    <div class="form-group">
+      <label>Phone Number</label>
+      <input type="tel" id="call-phone" placeholder="0712 345 678">
+    </div>
+    <div class="form-group">
+      <label>Best Time to Call</label>
+      <select id="call-time">
+        <option value="Morning (8am–12pm)">Morning (8am – 12pm)</option>
+        <option value="Afternoon (12pm–5pm)">Afternoon (12pm – 5pm)</option>
+        <option value="Evening (5pm–8pm)">Evening (5pm – 8pm)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>What do you need help with?</label>
+      <textarea id="call-topic" rows="3" placeholder="e.g. I'm stuck on the CSS Grid module and need guidance on my project…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="submitCallRequest()" style="flex:1">📞 Send Request</button>
+      <button class="btn btn-ghost" onclick="closeModal('call-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEND MESSAGE MODAL -->
+<div class="modal-overlay" id="email-modal">
+  <div class="modal" style="position:relative">
+    <button class="close-modal" onclick="closeModal('email-modal')">✕</button>
+    <h2>SEND A MESSAGE</h2>
+    <p>Your message will be sent directly to your instructor's email.</p>
+    <div class="form-group">
+      <label>Subject</label>
+      <input type="text" id="msg-subject" placeholder="e.g. Question about the SEO module">
+    </div>
+    <div class="form-group">
+      <label>Message</label>
+      <textarea id="msg-body" rows="5" placeholder="Write your question or message here…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="submitMessage()" style="flex:1">✉️ Send Message</button>
+      <button class="btn btn-ghost" onclick="closeModal('email-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL = 'https://dtawdhstvcklwyngatwa.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0YXdkaHN0dmNrbHd5bmdhdHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMDY2OTMsImV4cCI6MjA4ODg4MjY5M30.VHFPpU3MkBOBBoJtCk4c_27CmnhIHkYZpPMc2AefqbA';
+
+const COURSES = {
+  'web-dev':   { name:'Website Development',  icon:'🌐', color:'#2979ff', total:13 },
+  'wordpress': { name:'WordPress Design',      icon:'🔷', color:'#7c4dff', total:9  },
+  'seo':       { name:'SEO Mastery',           icon:'🔍', color:'#00e676', total:9  },
+  'hosting':   { name:'Hosting & Maintenance', icon:'🖥️', color:'#ffab40', total:7  },
+  'ecommerce': { name:'E-Commerce Mastery',    icon:'🛒', color:'#ff5252', total:10 },
+};
+const TOTALS = {'web-dev':13,'wordpress':9,'seo':9,'hosting':7,'ecommerce':10};
+
+let sb, currentUser, currentProfile, paySettings = {};
+
+function getP(){try{return JSON.parse(localStorage.getItem('fmm_p')||'{}');}catch{return {};}}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  // Nav mobile
+  document.getElementById('hbg').addEventListener('click', () => {
+    document.getElementById('nl').classList.toggle('open');
+  });
+
+  if (window.supabase) sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // Auth check
+  if (sb) {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { location.href = 'login.html'; return; }
+    currentUser = user;
+
+    const { data: profile } = await sb.from('profiles')
+      .select('full_name, email, role, created_at')
+      .eq('id', user.id).single();
+    currentProfile = profile;
+
+    // Role-aware nav
+    if (profile && ['instructor','admin'].includes(profile.role)) {
+      document.getElementById('nav-instructor-li').style.display = 'list-item';
+      document.getElementById('instructor-panel-btn').style.display = 'inline-flex';
+    }
+
+    // Nav avatar
+    const av = document.getElementById('nav-avatar');
+    av.style.display = 'flex';
+    av.textContent = (profile?.full_name || user.email || 'S')[0].toUpperCase();
+    document.getElementById('nav-signin-li').style.display = 'none';
+
+    // Load progress from Supabase
+    const { data: progData } = await sb.from('user_progress_summary')
+      .select('progress_data').eq('user_id', user.id).single();
+    if (progData?.progress_data) {
+      localStorage.setItem('fmm_p', JSON.stringify(progData.progress_data));
+    }
+
+    // Load payment/instructor settings
+    const { data: settings } = await sb.from('payment_settings').select('*').eq('id', 1).single();
+    if (settings) paySettings = settings;
+
+    renderProfile(profile, user);
+    renderStats();
+    renderCourses();
+    renderInstructorCard();
+  }
+});
+
+function renderProfile(profile, user) {
+  const name = profile?.full_name || user.email.split('@')[0];
+  const initials = name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+
+  document.getElementById('p-avatar').textContent = initials;
+  document.getElementById('p-name').textContent = name;
+  document.getElementById('p-email').textContent = profile?.email || user.email;
+
+  const joined = profile?.created_at
+    ? 'Joined ' + new Date(profile.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})
+    : '';
+  document.getElementById('p-joined').textContent = joined;
+
+  // Tags
+  const p = getP();
+  const tags = [];
+  const completed = Object.entries(COURSES).filter(([cid]) => {
+    const done = Object.values(p[cid]||{}).flat().length;
+    return done >= TOTALS[cid];
+  });
+  if (completed.length) tags.push(`<span class="tag green">🏆 ${completed.length} Course${completed.length>1?'s':''} Complete</span>`);
+  const totalDone = Object.values(TOTALS).reduce((a,b)=>a+b,0);
+  const done = Object.entries(COURSES).reduce((a,[cid]) => a + Object.values(p[cid]||{}).flat().length, 0);
+  const pct = Math.round(done/totalDone*100);
+  if (pct >= 50) tags.push('<span class="tag gold">⭐ Top Student</span>');
+  if (profile?.role === 'instructor' || profile?.role === 'admin') tags.push('<span class="tag">👨‍🏫 Instructor</span>');
+  else tags.push('<span class="tag">🎓 Student</span>');
+
+  document.getElementById('p-tags').innerHTML = tags.join('');
+}
+
+function renderStats() {
+  const p = getP();
+  const totalPossible = Object.values(TOTALS).reduce((a,b)=>a+b,0);
+  const totalDone = Object.entries(COURSES).reduce((a,[cid]) => a + Object.values(p[cid]||{}).flat().length, 0);
+  const overall = Math.round(totalDone/totalPossible*100);
+  const started = Object.keys(COURSES).filter(cid => Object.values(p[cid]||{}).flat().length > 0).length;
+  const complete = Object.keys(COURSES).filter(cid => Object.values(p[cid]||{}).flat().length >= TOTALS[cid]).length;
+
+  document.getElementById('s-overall').innerHTML = `${overall}<span>%</span>`;
+  document.getElementById('s-lessons').textContent = totalDone;
+  document.getElementById('s-courses').textContent = started;
+  document.getElementById('s-complete').textContent = complete;
+}
+
+function renderCourses() {
+  const p = getP();
+  const grid = document.getElementById('course-grid');
+  grid.innerHTML = Object.entries(COURSES).map(([cid, info]) => {
+    const done  = Object.values(p[cid]||{}).flat().length;
+    const total = info.total;
+    const pct   = Math.round(done/total*100);
+    const isComplete = done >= total;
+    const hasStarted = done > 0;
+
+    const statusHtml = isComplete
+      ? `<span class="cc-status complete">✅ Complete</span>`
+      : hasStarted
+        ? `<span class="cc-status inprogress">▶ In Progress</span>`
+        : `<span class="cc-status locked">○ Not Started</span>`;
+
+    const certBtn = isComplete
+      ? `<a href="certificates.html?course=${cid}" class="cert-btn">🏆 View Certificate</a>`
+      : '';
+
+    return `
+      <a href="lesson.html?course=${cid}" class="course-card">
+        <div class="cc-head">
+          <span class="cc-icon">${info.icon}</span>
+          <span class="cc-pct" style="color:${info.color}">${pct}%</span>
+        </div>
+        <div class="cc-name">${info.name}</div>
+        <div class="cc-lessons">${done} / ${total} lessons complete</div>
+        <div class="cc-track">
+          <div class="cc-fill" style="width:${pct}%;background:${info.color}"></div>
+        </div>
+        ${statusHtml}
+        ${certBtn}
+      </a>`;
+  }).join('');
+}
+
+function renderInstructorCard() {
+  const email    = paySettings.contact_email    || 'contact@fmm.co.ke';
+  const whatsapp = paySettings.contact_whatsapp || '';
+  const name     = paySettings.mpesa_name       || 'FMM Instructor';
+  const initials = name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+
+  document.getElementById('inst-avatar').textContent = initials;
+  document.getElementById('inst-name').textContent = name;
+  document.getElementById('inst-email-val').textContent = email;
+
+  const emailChip = document.getElementById('chip-email');
+  emailChip.href = `mailto:${email}`;
+
+  if (whatsapp) {
+    const waChip = document.getElementById('chip-wa');
+    const waClean = whatsapp.replace(/\D/g,'');
+    waChip.href = `https://wa.me/${waClean}`;
+    document.getElementById('inst-wa-val').textContent = whatsapp;
+  } else {
+    document.getElementById('chip-wa').style.display = 'none';
+  }
+}
+
+// ── MODALS ──────────────────────────────────────────────────────
+function openCallModal() {
+  const name = currentProfile?.full_name || '';
+  document.getElementById('call-name').value = name;
+  document.getElementById('call-modal').classList.add('open');
+}
+function openEmailModal() {
+  document.getElementById('email-modal').classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+async function submitCallRequest() {
+  const name  = document.getElementById('call-name').value.trim();
+  const phone = document.getElementById('call-phone').value.trim();
+  const time  = document.getElementById('call-time').value;
+  const topic = document.getElementById('call-topic').value.trim();
+
+  if (!name || !phone) { showToast('⚠️ Please fill in name and phone number'); return; }
+
+  const email = paySettings.contact_email || 'contact@fmm.co.ke';
+
+  // Open mailto with pre-filled call request
+  const subject = encodeURIComponent(`📞 Call Request from ${name} — FMM Academy`);
+  const body = encodeURIComponent(
+    `Hi,\n\nI would like to request a call from my FMM Academy instructor.\n\n` +
+    `Name: ${name}\nPhone: ${phone}\nBest time: ${time}\nStudent email: ${currentUser?.email || ''}\n\n` +
+    `Topic:\n${topic || 'General guidance'}\n\nThank you!`
+  );
+  window.open(`mailto:${email}?subject=${subject}&body=${body}`);
+
+  closeModal('call-modal');
+  showToast('✅ Call request ready — check your email app!', 'success');
+}
+
+async function submitMessage() {
+  const subject = document.getElementById('msg-subject').value.trim();
+  const body    = document.getElementById('msg-body').value.trim();
+
+  if (!subject || !body) { showToast('⚠️ Please fill in subject and message'); return; }
+
+  const email = paySettings.contact_email || 'contact@fmm.co.ke';
+  const name  = currentProfile?.full_name || currentUser?.email || 'Student';
+
+  const subj = encodeURIComponent(`[FMM Academy] ${subject}`);
+  const bod  = encodeURIComponent(
+    `From: ${name} (${currentUser?.email || ''})\n\n${body}`
+  );
+  window.open(`mailto:${email}?subject=${subj}&body=${bod}`);
+
+  closeModal('email-modal');
+  showToast('✅ Message ready — check your email app!', 'success');
+}
+
+async function doLogout() {
+  if (sb) await sb.auth.signOut();
+  localStorage.removeItem('fmm_user');
+  localStorage.removeItem('fmm_p');
+  location.href = 'https://felixmogusu.github.io/Fullstack-Masterminds/pages/login.html';
+}
+
+function showToast(msg, type) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast' + (type === 'success' ? ' success' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModal('call-modal');
+    closeModal('email-modal');
+  }
+});
+</script>
+</body>
+</html>
