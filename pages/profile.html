@@ -80,7 +80,6 @@ main{max-width:1100px;margin:0 auto;padding:48px 28px 80px}
 }
 .profile-info{flex:1;min-width:200px}
 .profile-name{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--white);letter-spacing:.06em;line-height:1}
-.profile-email{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--txtm);margin-top:6px}
 .profile-joined{font-size:.8rem;color:var(--txtd);margin-top:4px}
 .profile-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .tag{
@@ -180,41 +179,7 @@ main{max-width:1100px;margin:0 auto;padding:48px 28px 80px}
   cursor:pointer;transition:all .2s;text-decoration:none;
 }
 .contact-chip:hover{background:rgba(41,121,255,.15);border-color:var(--blue)}
-.contact-chip strong{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--blue);display:block}
-.instructor-actions{display:flex;flex-direction:column;gap:10px;flex-shrink:0}
-
-/* ── REQUEST CALL MODAL ── */
-.modal-overlay{
-  position:fixed;inset:0;background:rgba(2,8,24,.8);
-  backdrop-filter:blur(6px);z-index:300;
-  display:none;align-items:center;justify-content:center;padding:20px;
-}
-.modal-overlay.open{display:flex}
-.modal{
-  background:var(--bg1);border:1px solid var(--bdr2);border-radius:20px;
-  padding:40px;max-width:480px;width:100%;
-  box-shadow:0 32px 80px rgba(0,0,0,.6),var(--glow);
-}
-.modal h2{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--white);letter-spacing:.06em;margin-bottom:8px}
-.modal p{font-size:.88rem;color:var(--txtm);margin-bottom:24px;line-height:1.65}
-.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
-.form-group label{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--txtm);letter-spacing:.08em;text-transform:uppercase}
-.form-group input,.form-group select,.form-group textarea{
-  background:var(--bg2);border:1px solid rgba(41,121,255,.2);
-  color:var(--txt);font-family:'Outfit',sans-serif;font-size:.9rem;
-  padding:11px 14px;border-radius:8px;transition:border-color .2s;
-}
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--blue)}
-.form-group input::placeholder,.form-group textarea::placeholder{color:var(--txtd)}
-.modal-actions{display:flex;gap:12px;margin-top:8px}
-.close-modal{
-  background:rgba(255,255,255,.06);border:none;color:var(--txtm);
-  width:32px;height:32px;border-radius:8px;cursor:pointer;
-  font-size:1.1rem;position:absolute;top:16px;right:16px;
-  display:flex;align-items:center;justify-content:center;
-}
-
-/* ── TOAST ── */
+.contact-chip strong{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--blue);display:block}/* ── TOAST ── */
 .toast{
   position:fixed;bottom:32px;right:32px;
   background:linear-gradient(135deg,#1557e8,#2979ff);color:#fff;
@@ -236,7 +201,6 @@ main{max-width:1100px;margin:0 auto;padding:48px 28px 80px}
   .profile-hero{padding:28px 24px;flex-direction:column;align-items:flex-start}
   .profile-hero-actions{align-items:flex-start;width:100%;flex-direction:row;flex-wrap:wrap}
   .instructor-card{padding:24px;flex-direction:column;align-items:flex-start}
-  .instructor-actions{flex-direction:row;flex-wrap:wrap}
 }
 </style>
 </head>
@@ -272,7 +236,6 @@ main{max-width:1100px;margin:0 auto;padding:48px 28px 80px}
     </div>
     <div class="profile-info">
       <div class="profile-name" id="p-name">Loading…</div>
-      <div class="profile-email" id="p-email"></div>
       <div class="profile-joined" id="p-joined"></div>
       <div class="profile-tags" id="p-tags"></div>
     </div>
@@ -312,80 +275,20 @@ main{max-width:1100px;margin:0 auto;padding:48px 28px 80px}
   <div class="instructor-card" id="instructor-card">
     <div class="instructor-avatar" id="inst-avatar">F</div>
     <div class="instructor-info">
-      <h3 id="inst-name">Felix Mogusu - FMM Instructor</h3>
-      <p id="inst-bio">Your guide through the Fullstack Masterminds curriculum. Reach out any time for guidance, mentorship, or career advice.EMAIL;felixmogusu@gmail.com  PHONE / WHATSAPP ; 0710792239</p>
+      <h3 id="inst-name">FMM Instructor</h3>
+      <p id="inst-bio">Your guide through the Fullstack Masterminds curriculum. Reach out any time for guidance, mentorship, or career advice.</p>
       <div class="contact-chips" id="contact-chips">
-        <a class="contact-chip" id="chip-email" href="#">
-          <span>📧</span>
-          <div><strong>EMAIL</strong><span id="inst-email-val">Loading…</span></div>
-        </a>
         <a class="contact-chip" id="chip-wa" href="#" target="_blank">
           <span>💬</span>
           <div><strong>WHATSAPP</strong><span id="inst-wa-val">Loading…</span></div>
         </a>
       </div>
     </div>
-    <div class="instructor-actions">
-      <button class="btn btn-primary" onclick="openCallModal()">📞 Request a Call</button>
-      <button class="btn btn-ghost" onclick="openEmailModal()">✉️ Send a Message</button>
-    </div>
   </div>
 
 </main>
 
-<!-- REQUEST CALL MODAL -->
-<div class="modal-overlay" id="call-modal">
-  <div class="modal" style="position:relative">
-    <button class="close-modal" onclick="closeModal('call-modal')">✕</button>
-    <h2>REQUEST A CALL</h2>
-    <p>Fill in your details and the instructor will call you back at a convenient time.</p>
-    <div class="form-group">
-      <label>Your Name</label>
-      <input type="text" id="call-name" placeholder="Felix Mogusu">
-    </div>
-    <div class="form-group">
-      <label>Phone Number</label>
-      <input type="tel" id="call-phone" placeholder="0712 345 678">
-    </div>
-    <div class="form-group">
-      <label>Best Time to Call</label>
-      <select id="call-time">
-        <option value="Morning (8am–12pm)">Morning (8am – 12pm)</option>
-        <option value="Afternoon (12pm–5pm)">Afternoon (12pm – 5pm)</option>
-        <option value="Evening (5pm–8pm)">Evening (5pm – 8pm)</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>What do you need help with?</label>
-      <textarea id="call-topic" rows="3" placeholder="e.g. I'm stuck on the CSS Grid module and need guidance on my project…"></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="submitCallRequest()" style="flex:1">📞 Send Request</button>
-      <button class="btn btn-ghost" onclick="closeModal('call-modal')">Cancel</button>
-    </div>
-  </div>
-</div>
 
-<!-- SEND MESSAGE MODAL -->
-<div class="modal-overlay" id="email-modal">
-  <div class="modal" style="position:relative">
-    <button class="close-modal" onclick="closeModal('email-modal')">✕</button>
-    <h2>SEND A MESSAGE</h2>
-    <p>Your message will be sent directly to your instructor's email.</p>
-    <div class="form-group">
-      <label>Subject</label>
-      <input type="text" id="msg-subject" placeholder="e.g. Question about the SEO module">
-    </div>
-    <div class="form-group">
-      <label>Message</label>
-      <textarea id="msg-body" rows="5" placeholder="Write your question or message here…"></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-primary" onclick="submitMessage()" style="flex:1">✉️ Send Message</button>
-      <button class="btn btn-ghost" onclick="closeModal('email-modal')">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -459,7 +362,6 @@ function renderProfile(profile, user) {
 
   document.getElementById('p-avatar').textContent = initials;
   document.getElementById('p-name').textContent = name;
-  document.getElementById('p-email').textContent = profile?.email || user.email;
 
   const joined = profile?.created_at
     ? 'Joined ' + new Date(profile.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})
@@ -536,17 +438,11 @@ function renderCourses() {
 }
 
 function renderInstructorCard() {
-  const email    = paySettings.contact_email    || 'contact@fmm.co.ke';
   const whatsapp = paySettings.contact_whatsapp || '';
-  const name     = paySettings.mpesa_name       || 'FMM Instructor';
-  const initials = name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
 
-  document.getElementById('inst-avatar').textContent = initials;
-  document.getElementById('inst-name').textContent = name;
-  document.getElementById('inst-email-val').textContent = email;
-
-  const emailChip = document.getElementById('chip-email');
-  emailChip.href = `mailto:${email}`;
+  // Instructor name is always Felix Mogusu
+  document.getElementById('inst-avatar').textContent = 'FM';
+  document.getElementById('inst-name').textContent = 'Felix Mogusu';
 
   if (whatsapp) {
     const waChip = document.getElementById('chip-wa');
@@ -556,61 +452,6 @@ function renderInstructorCard() {
   } else {
     document.getElementById('chip-wa').style.display = 'none';
   }
-}
-
-// ── MODALS ──────────────────────────────────────────────────────
-function openCallModal() {
-  const name = currentProfile?.full_name || '';
-  document.getElementById('call-name').value = name;
-  document.getElementById('call-modal').classList.add('open');
-}
-function openEmailModal() {
-  document.getElementById('email-modal').classList.add('open');
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
-}
-
-async function submitCallRequest() {
-  const name  = document.getElementById('call-name').value.trim();
-  const phone = document.getElementById('call-phone').value.trim();
-  const time  = document.getElementById('call-time').value;
-  const topic = document.getElementById('call-topic').value.trim();
-
-  if (!name || !phone) { showToast('⚠️ Please fill in name and phone number'); return; }
-
-  const email = paySettings.contact_email || 'contact@fmm.co.ke';
-
-  // Open mailto with pre-filled call request
-  const subject = encodeURIComponent(`📞 Call Request from ${name} — FMM Academy`);
-  const body = encodeURIComponent(
-    `Hi,\n\nI would like to request a call from my FMM Academy instructor.\n\n` +
-    `Name: ${name}\nPhone: ${phone}\nBest time: ${time}\nStudent email: ${currentUser?.email || ''}\n\n` +
-    `Topic:\n${topic || 'General guidance'}\n\nThank you!`
-  );
-  window.open(`mailto:${email}?subject=${subject}&body=${body}`);
-
-  closeModal('call-modal');
-  showToast('✅ Call request ready — check your email app!', 'success');
-}
-
-async function submitMessage() {
-  const subject = document.getElementById('msg-subject').value.trim();
-  const body    = document.getElementById('msg-body').value.trim();
-
-  if (!subject || !body) { showToast('⚠️ Please fill in subject and message'); return; }
-
-  const email = paySettings.contact_email || 'contact@fmm.co.ke';
-  const name  = currentProfile?.full_name || currentUser?.email || 'Student';
-
-  const subj = encodeURIComponent(`[FMM Academy] ${subject}`);
-  const bod  = encodeURIComponent(
-    `From: ${name} (${currentUser?.email || ''})\n\n${body}`
-  );
-  window.open(`mailto:${email}?subject=${subj}&body=${bod}`);
-
-  closeModal('email-modal');
-  showToast('✅ Message ready — check your email app!', 'success');
 }
 
 async function doLogout() {
@@ -628,13 +469,6 @@ function showToast(msg, type) {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3500);
 }
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    closeModal('call-modal');
-    closeModal('email-modal');
-  }
-});
 </script>
 </body>
 </html>
