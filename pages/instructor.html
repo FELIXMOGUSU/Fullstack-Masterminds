@@ -437,6 +437,7 @@ tbody td{padding:14px 16px;font-size:.875rem;color:var(--txt)}
   <div class="drawer-body" id="drawer-body"></div>
 </div>
 
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SB_URL = 'https://dtawdhstvcklwyngatwa.supabase.co';
@@ -461,158 +462,75 @@ const COURSE_INFO = {
 let sb, allStudents = [], filtered = [], sortDir = { col:'progress', dir:-1 };
 let pendingAccess = {};
 
-// ═══════════════════════════════════════════════════════════════
-// DIAGNOSTIC — probes your actual DB and shows exactly what exists
-// This runs on every load so you can see real table/column names.
-// ═══════════════════════════════════════════════════════════════
-async function runDiagnostics(sb) {
-  const tables = [
-    'profiles','user_progress_summary','course_access',
-    'payment_settings','lesson_notes','users','students',
-    'progress','user_progress',
-  ];
-  let html = `<div style="background:#060e24;border:1px solid rgba(255,171,64,.35);
-    border-radius:10px;padding:20px 24px;margin-bottom:28px;
-    font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.8">
-    <div style="color:#ffab40;font-weight:700;margin-bottom:12px;font-size:.85rem">
-      🔍 LIVE DATABASE DIAGNOSTIC
-    </div>`;
-
-  for (const t of tables) {
-    const { data, error } = await sb.from(t).select('*').limit(2);
-    if (error) {
-      html += `<div style="color:#3a5a8a">✖ <b>${t}</b> — ${error.code}: ${error.message}</div>`;
-    } else {
-      const cols = data && data[0] ? Object.keys(data[0]).join(', ') : '(no rows yet)';
-      const cnt  = data ? data.length : 0;
-      html += `<div style="color:#00e676">✔ <b style="color:#fff">${t}</b>
-        — <span style="color:#ffab40">${cnt} row(s) visible to anon key</span><br>
-        <span style="color:#3d5a8a;padding-left:14px">cols: ${cols}</span></div>`;
-    }
-  }
-
-  const { data: authData } = await sb.auth.getUser();
-  const u = authData?.user;
-  html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(41,121,255,.15);color:#7a9cc8">
-    👤 Signed in as: <span style="color:#fff">${u ? u.email + ' — id: ' + u.id : 'NOT SIGNED IN (anon)'}</span>
-  </div></div>`;
-
-  const wrap = document.createElement('div');
-  wrap.innerHTML = html;
-  document.getElementById('stats-row').before(wrap);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════
+// ── INIT ─────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-  if (!window.supabase) {
-    setStatus('⚠️ Supabase SDK failed to load.'); return;
-  }
+  if (!window.supabase) { setStatus('Supabase SDK failed to load.'); return; }
   sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  // Run diagnostics FIRST so you always see what's in the DB
-  await runDiagnostics(sb);
-
-  // Auth — warn but never block
-  let user = null;
+  let currentUserId = null;
   try {
     const { data } = await sb.auth.getUser();
-    user = data?.user || null;
-  } catch(e) { console.warn('auth:', e.message); }
+    currentUserId = data?.user?.id || null;
+  } catch(e) {}
 
-  // Role check — only block if role is explicitly a non-instructor value
-  if (user) {
-    const { data: prof } = await sb.from('profiles')
-      .select('role').eq('id', user.id).maybeSingle();
-    if (prof?.role && !['instructor','admin'].includes(prof.role)) {
-      document.querySelector('main').innerHTML = `<div class="empty">
-        <div class="empty-icon">🔒</div>
-        <h2 style="color:#fff;font-family:var(--fhead);font-size:1.8rem">ACCESS RESTRICTED</h2>
-        <p>This dashboard is for instructors only.</p>
-        <a href="dashboard.html" class="btn btn-primary" style="margin-top:20px;display:inline-flex">← Back</a>
-      </div>`;
-      return;
-    }
-  }
-
-  loadAllStudents();
+  loadAllStudents(currentUserId);
 });
 
-// ═══════════════════════════════════════════════════════════════
-// LOAD ALL STUDENTS
-// Strategy: try user_progress_summary first (has full_name, email,
-// progress_data). Fall back to profiles if that is empty.
-// Merge both so nothing is missed.
-// ═══════════════════════════════════════════════════════════════
-async function loadAllStudents() {
+// ── LOAD DATA — reads from profiles + user_progress ──────────────
+async function loadAllStudents(currentUserId) {
   setSpinner();
-
   try {
-    // ── Pull from user_progress_summary ──────────────────────
-    const { data: progRows, error: pe } = await sb
-      .from('user_progress_summary')
-      .select('*')
-      .order('updated_at', { ascending: false });
+    // Fetch all profiles
+    const { data: profData, error: profErr } = await sb
+      .from('profiles').select('*');
+    if (profErr) throw new Error('profiles: ' + profErr.message);
 
-    if (pe) console.warn('user_progress_summary error:', pe.message);
+    // Fetch all progress rows
+    const { data: progData, error: progErr } = await sb
+      .from('user_progress').select('*');
+    if (progErr) throw new Error('user_progress: ' + progErr.message);
 
-    // ── Pull from profiles ────────────────────────────────────
-    const { data: profRows, error: pre } = await sb
-      .from('profiles')
-      .select('*');
+    const profiles = profData || [];
+    const progRows = progData || [];
 
-    if (pre) console.warn('profiles error:', pre.message);
-
-    const progressList = progRows  || [];
-    const profileList  = profRows  || [];
-
-    // Build lookup maps
+    // Index progress by user id (handles user_id or id column)
     const progByUser = {};
-    progressList.forEach(r => { progByUser[r.user_id] = r; });
+    progRows.forEach(r => {
+      const key = r.user_id || r.id;
+      if (key) progByUser[key] = r;
+    });
 
-    const profByUser = {};
-    profileList.forEach(r => { profByUser[r.id] = r; });
+    // Filter out instructors/admins and the currently signed-in instructor
+    const students = profiles.filter(p => {
+      if (currentUserId && p.id === currentUserId) return false;
+      if (['instructor','admin'].includes(p.role))  return false;
+      return true;
+    });
 
-    // Merge: start with all user IDs seen in either table
-    const allUserIds = new Set([
-      ...progressList.map(r => r.user_id),
-      ...profileList.map(r => r.id),
-    ]);
+    allStudents = students.map(p => {
+      const prog = progByUser[p.id] || {};
 
-    allStudents = Array.from(allUserIds).map(uid => {
-      const prog = progByUser[uid] || {};
-      const prof = profByUser[uid] || {};
-
-      // Resolve name — check every possible column name
-      const name =
-        prog.full_name || prog.name ||
-        prof.full_name || prof.name ||
-        prog.email?.split('@')[0] ||
-        prof.email?.split('@')[0] ||
-        'Unknown';
-
-      // Resolve email
-      const email =
-        prog.email || prof.email || '—';
-
-      // Resolve enrolled date
-      const enrolled =
-        prof.created_at || prog.created_at || prog.updated_at || null;
-
-      // Resolve last active
-      const lastActive = prog.updated_at || null;
-
-      // Resolve progress data — could be stored as progress_data or data
+      // Support multiple possible column names for progress data
       const rawData =
-        prog.progress_data || prog.data || prog.progress || {};
+        prog.progress_data || prog.data ||
+        prog.progress      || prog.courses || {};
 
-      // Calculate per-course completions
+      const lastActive =
+        prog.updated_at || prog.last_active ||
+        prog.last_seen  || null;
+
+      const name =
+        p.full_name || p.name || p.display_name ||
+        p.email?.split('@')[0] || 'Unknown';
+
+      const email    = p.email    || '—';
+      const enrolled = p.created_at || null;
+
       const courses = {};
       let totalDone = 0, totalPossible = 0;
       Object.entries(COURSES).forEach(([cid, info]) => {
         let done = 0;
-        if (typeof rawData === 'object' && rawData[cid]) {
+        if (rawData && typeof rawData === 'object' && rawData[cid]) {
           done = Object.values(rawData[cid]).flat().length;
         }
         courses[cid] = { done, total: info.total, pct: Math.round(done / info.total * 100) };
@@ -622,47 +540,36 @@ async function loadAllStudents() {
 
       const overallPct = Math.round(totalDone / totalPossible * 100);
       const daysSince  = lastActive
-        ? Math.floor((Date.now() - new Date(lastActive)) / 86400000)
-        : 999;
+        ? Math.floor((Date.now() - new Date(lastActive)) / 86400000) : 999;
       const status = !lastActive    ? 'new'
-                   : daysSince <= 7 ? 'active'
-                   : 'idle';
+                   : daysSince <= 7 ? 'active' : 'idle';
 
       return {
-        id: uid, name, email, enrolled, lastActive, daysSince,
+        id: p.id, name, email, enrolled, lastActive, daysSince,
         courses, overallPct, totalDone, status, rawProgress: rawData,
       };
     });
 
-    // Exclude the instructor's own account if signed in
-    const { data: authData } = await sb.auth.getUser();
-    const myId = authData?.user?.id;
-    if (myId) allStudents = allStudents.filter(s => s.id !== myId);
-
     filtered = [...allStudents];
     renderStats();
     renderTable();
-    setStatus(`${allStudents.length} student${allStudents.length !== 1 ? 's' : ''} found · refreshed ${new Date().toLocaleTimeString()}`);
+    setStatus(`${allStudents.length} student${allStudents.length !== 1 ? 's' : ''} enrolled · refreshed ${new Date().toLocaleTimeString()}`);
 
   } catch(err) {
     document.getElementById('student-tbody').innerHTML =
-      `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger)">
-        ⚠️ ${esc(err.message)}
-      </td></tr>`;
-    setStatus('⚠️ Error — see table for details');
+      `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger)">⚠️ ${esc(err.message)}</td></tr>`;
+    setStatus('Error loading data — check table/RLS permissions');
+    console.error('[FMM]', err);
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// STATS
-// ═══════════════════════════════════════════════════════════════
+// ── STATS ────────────────────────────────────────────────────────
 function renderStats() {
-  const total    = allStudents.length;
-  const active   = allStudents.filter(s => s.status === 'active').length;
-  const avgComp  = total ? Math.round(allStudents.reduce((a,s) => a + s.overallPct, 0) / total) : 0;
+  const total     = allStudents.length;
+  const active    = allStudents.filter(s => s.status === 'active').length;
+  const avgComp   = total ? Math.round(allStudents.reduce((a,s) => a + s.overallPct, 0) / total) : 0;
   const completed = allStudents.filter(s => s.overallPct === 100).length;
-  const lessons  = allStudents.reduce((a,s) => a + s.totalDone, 0);
-
+  const lessons   = allStudents.reduce((a,s) => a + s.totalDone, 0);
   document.getElementById('s-total').textContent    = total;
   document.getElementById('s-active').textContent   = active;
   document.getElementById('s-avg').innerHTML        = `${avgComp}<span>%</span>`;
@@ -670,62 +577,53 @@ function renderStats() {
   document.getElementById('s-lessons').textContent  = lessons;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TABLE RENDER
-// ═══════════════════════════════════════════════════════════════
+// ── TABLE RENDER ─────────────────────────────────────────────────
 function renderTable() {
   const tbody = document.getElementById('student-tbody');
   if (!filtered.length) {
     tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
       <div class="empty-icon">🎓</div>
-      <p>No students found. Check the diagnostic panel above for table status.</p>
+      <p>No students found in the <strong>profiles</strong> table, or all rows are filtered out.<br>
+      Make sure the anon key has SELECT access on <strong>profiles</strong> and <strong>user_progress</strong>.</p>
     </div></td></tr>`;
     return;
   }
-
   tbody.innerHTML = filtered.map(s => {
-    const initials  = s.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() || '??';
-    const enrolled  = s.enrolled ? new Date(s.enrolled).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
-    const lastSeen  = !s.lastActive ? 'Never'
-                    : s.daysSince === 0 ? 'Today'
-                    : s.daysSince === 1 ? 'Yesterday'
-                    : `${s.daysSince}d ago`;
+    const initials = s.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase() || '??';
+    const enrolled = s.enrolled
+      ? new Date(s.enrolled).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    const lastSeen = !s.lastActive   ? 'Never'
+                   : s.daysSince===0 ? 'Today'
+                   : s.daysSince===1 ? 'Yesterday'
+                   :                  `${s.daysSince}d ago`;
     const statusMap   = { active:'status-active', idle:'status-idle', new:'status-new' };
-    const statusLabel = { active:'● Active', idle:'○ Idle', new:'✦ New' };
-
-    const topCourses = Object.entries(s.courses)
-      .filter(([,v]) => v.pct > 0)
-      .sort((a,b) => b[1].pct - a[1].pct).slice(0,3);
-
+    const statusLabel = { active:'● Active',       idle:'○ Idle',      new:'✦ New'      };
+    const topCourses  = Object.entries(s.courses)
+      .filter(([,v]) => v.pct > 0).sort((a,b) => b[1].pct - a[1].pct).slice(0,3);
     const barsHtml = topCourses.length
       ? topCourses.map(([cid,v]) => `
-          <div class="prog-row">
-            <span class="course-label" style="width:12px">${COURSES[cid].icon}</span>
-            <div class="prog-bar-wrap">
-              <div class="prog-bar-fill" style="width:${v.pct}%;background:${COURSES[cid].color}"></div>
-            </div>
-            <span class="prog-pct">${v.pct}%</span>
-          </div>`).join('')
+        <div class="prog-row">
+          <span class="course-label" style="width:12px">${COURSES[cid].icon}</span>
+          <div class="prog-bar-wrap">
+            <div class="prog-bar-fill" style="width:${v.pct}%;background:${COURSES[cid].color}"></div>
+          </div>
+          <span class="prog-pct">${v.pct}%</span>
+        </div>`).join('')
       : '<span style="color:var(--txtd);font-size:.78rem;font-family:var(--fmono)">No activity yet</span>';
-
     const fillColor = s.overallPct >= 80 ? 'var(--ok)' : s.overallPct >= 40 ? 'var(--blue)' : 'var(--warn)';
 
     return `<tr onclick="openDrawer('${s.id}')" style="cursor:pointer">
-      <td>
-        <div class="student-cell">
-          <div class="avatar">${initials}</div>
-          <div>
-            <div class="student-name">${esc(s.name)}</div>
-            <div class="student-email">${esc(s.email)}</div>
-          </div>
+      <td><div class="student-cell">
+        <div class="avatar">${initials}</div>
+        <div>
+          <div class="student-name">${esc(s.name)}</div>
+          <div class="student-email">${esc(s.email)}</div>
         </div>
-      </td>
+      </div></td>
       <td style="color:var(--txtm);font-size:.82rem">${enrolled}</td>
       <td class="prog-cell">
         <div class="overall-bar">
-          <div class="overall-track">
-            <div class="overall-fill" style="width:${s.overallPct}%;background:${fillColor}"></div>
-          </div>
+          <div class="overall-track"><div class="overall-fill" style="width:${s.overallPct}%;background:${fillColor}"></div></div>
           <span class="overall-pct" style="color:${fillColor}">${s.overallPct}%</span>
         </div>
         <div style="font-size:.72rem;color:var(--txtd);margin-top:4px;font-family:var(--fmono)">${s.totalDone} lessons complete</div>
@@ -736,62 +634,45 @@ function renderTable() {
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="export-btn" onclick="event.stopPropagation();openDrawer('${s.id}')">View →</button>
         <button class="export-btn" style="background:rgba(0,230,118,.08);border-color:rgba(0,230,118,.25);color:var(--ok)"
-          onclick="grantAllAccess('${s.id}',event)" title="Grant full access">✅ Grant</button>
+          onclick="grantAllAccess('${s.id}',event)">✅ Grant</button>
       </td>
     </tr>`;
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// FILTER & SORT
-// ═══════════════════════════════════════════════════════════════
+// ── FILTER & SORT ────────────────────────────────────────────────
 function filterTable() {
-  const q      = document.getElementById('search-inp').value.toLowerCase();
+  const q = document.getElementById('search-inp').value.toLowerCase();
   const course = document.getElementById('course-filter').value;
   const status = document.getElementById('status-filter').value;
   filtered = allStudents.filter(s => {
-    const matchQ = !q || s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q);
-    const matchC = !course || s.courses[course]?.pct > 0;
-    const matchS = !status || s.status === status;
-    return matchQ && matchC && matchS;
+    return (!q      || s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q))
+        && (!course || s.courses[course]?.pct > 0)
+        && (!status || s.status === status);
   });
-  applySort();
-  renderTable();
-}
-
-function sortBy(col) {
-  if (sortDir.col === col) sortDir.dir *= -1;
-  else { sortDir.col = col; sortDir.dir = -1; }
   applySort(); renderTable();
 }
-
+function sortBy(col) {
+  if (sortDir.col === col) sortDir.dir *= -1; else { sortDir.col = col; sortDir.dir = -1; }
+  applySort(); renderTable();
+}
 function applySort() {
   filtered.sort((a,b) => {
-    let va, vb;
-    switch(sortDir.col) {
-      case 'name':     va = a.name;           vb = b.name;           break;
-      case 'enrolled': va = a.enrolled || ''; vb = b.enrolled || ''; break;
-      case 'last':     va = a.lastActive||''; vb = b.lastActive||''; break;
-      default:         va = a.overallPct;     vb = b.overallPct;
-    }
+    const va = sortDir.col==='name' ? a.name : sortDir.col==='enrolled' ? (a.enrolled||'') : sortDir.col==='last' ? (a.lastActive||'') : a.overallPct;
+    const vb = sortDir.col==='name' ? b.name : sortDir.col==='enrolled' ? (b.enrolled||'') : sortDir.col==='last' ? (b.lastActive||'') : b.overallPct;
     return va < vb ? sortDir.dir : va > vb ? -sortDir.dir : 0;
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DRAWER
-// ═══════════════════════════════════════════════════════════════
+// ── DRAWER ───────────────────────────────────────────────────────
 async function openDrawer(userId) {
   const s = allStudents.find(x => x.id === userId);
   if (!s) return;
-
   document.getElementById('d-avatar').textContent = s.name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
   document.getElementById('d-name').textContent   = s.name;
   document.getElementById('d-email').textContent  = s.email;
-
   const enrolled = s.enrolled
-    ? new Date(s.enrolled).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})
-    : 'Unknown';
+    ? new Date(s.enrolled).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : 'Unknown';
   document.getElementById('d-meta').innerHTML = `
     <span class="meta-chip">📅 Joined ${enrolled}</span>
     <span class="meta-chip">📚 ${s.totalDone} lessons</span>
@@ -804,10 +685,8 @@ async function openDrawer(userId) {
         <span class="course-card-name">${info.icon} ${info.name}</span>
         <span class="course-card-pct" style="color:${info.color}">${cv.pct}%</span>
       </div>
-      <div class="course-track">
-        <div class="course-fill" style="width:${cv.pct}%;background:${info.color}"></div>
-      </div>
-      <div style="font-size:.78rem;color:var(--txtd);font-family:var(--fmono)">${cv.done} / ${cv.total} lessons complete</div>
+      <div class="course-track"><div class="course-fill" style="width:${cv.pct}%;background:${info.color}"></div></div>
+      <div style="font-size:.78rem;color:var(--txtd);font-family:var(--fmono)">${cv.done}/${cv.total} lessons complete</div>
     </div>`;
   }).join('');
 
@@ -815,8 +694,7 @@ async function openDrawer(userId) {
   const timeline   = buildTimeline(s.rawProgress, s.lastActive);
 
   document.getElementById('drawer-body').innerHTML = `
-    <div class="section-title">COURSE PROGRESS</div>
-    ${courseCards}
+    <div class="section-title">COURSE PROGRESS</div>${courseCards}
     <div class="section-title">ACCESS & PAYMENTS</div>
     <p style="color:var(--txtm);font-size:.85rem;margin-bottom:14px">Toggle to grant or revoke paid course access.</p>
     <div class="access-grid">${buildAccessCards(s.id, accessData)}</div>
@@ -833,65 +711,45 @@ async function openDrawer(userId) {
   document.getElementById('overlay').classList.add('open');
   document.getElementById('drawer').classList.add('open');
 }
-
 function closeDrawer() {
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('drawer').classList.remove('open');
 }
-
 function buildLessonGrid(rawProgress) {
   return Object.entries(COURSES).map(([cid, info]) => {
-    const mods = rawProgress[cid] || {};
+    const mods = (rawProgress && rawProgress[cid]) || {};
     const dots = Object.entries(mods).map(([mid, lids]) =>
-      (Array.isArray(lids) ? lids : []).map(lid =>
-        `<div class="dot done" title="${mid}/${lid}"></div>`
-      ).join('')
+      (Array.isArray(lids)?lids:[]).map(lid=>`<div class="dot done" title="${mid}/${lid}"></div>`).join('')
     ).join('');
     const done = Object.values(mods).flat().length;
     return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
       <span style="font-size:.75rem;color:var(--txtd);font-family:var(--fmono);min-width:22px">${info.icon}</span>
-      <div style="display:flex;flex-wrap:wrap;gap:4px;flex:1">${dots || '<span style="color:var(--txtd);font-size:.72rem;font-family:var(--fmono)">No lessons completed</span>'}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;flex:1">${dots||'<span style="color:var(--txtd);font-size:.72rem;font-family:var(--fmono)">No lessons completed</span>'}</div>
       <span style="font-family:var(--fmono);font-size:.72rem;color:var(--txtm);min-width:40px;text-align:right">${done}/${info.total}</span>
     </div>`;
   }).join('');
 }
-
 function buildTimeline(rawProgress, lastActive) {
   const events = [];
   Object.entries(COURSES).forEach(([cid, info]) => {
-    const done = Object.values(rawProgress[cid] || {}).flat().length;
+    const done = Object.values((rawProgress&&rawProgress[cid])||{}).flat().length;
     if (done > 0) events.push(`Completed ${done} lesson${done>1?'s':''} in <strong>${info.name}</strong>`);
   });
-
   if (!events.length) return `<li class="tl-item"><div class="tl-text" style="color:var(--txtd)">No activity recorded yet</div></li>`;
-
-  const lastStr = lastActive
-    ? new Date(lastActive).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
-    : 'Unknown';
-
-  return events.map(label => `
-    <li class="tl-item">
-      <div class="tl-time">${lastStr}</div>
-      <div class="tl-text">${label}</div>
-    </li>`).join('') + `
-    <li class="tl-item">
-      <div class="tl-time">Enrolled</div>
-      <div class="tl-text">Student joined FMM Academy</div>
-    </li>`;
+  const lastStr = lastActive ? new Date(lastActive).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : 'Unknown';
+  return events.map(label=>`<li class="tl-item"><div class="tl-time">${lastStr}</div><div class="tl-text">${label}</div></li>`).join('')
+    + `<li class="tl-item"><div class="tl-time">Enrolled</div><div class="tl-text">Student joined FMM Academy</div></li>`;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ACCESS MANAGEMENT
-// ═══════════════════════════════════════════════════════════════
+// ── ACCESS MANAGEMENT ────────────────────────────────────────────
 async function loadStudentAccess(userId) {
   try {
     const { data } = await sb.from('course_access').select('course_id,granted').eq('user_id', userId);
     const map = {};
-    (data || []).forEach(r => { map[r.course_id] = r.granted; });
+    (data||[]).forEach(r => { map[r.course_id] = r.granted; });
     return map;
   } catch(e) { return {}; }
 }
-
 function buildAccessCards(userId, accessMap) {
   return Object.entries(COURSE_INFO).map(([cid, info]) => {
     const granted = !!accessMap[cid];
@@ -900,119 +758,87 @@ function buildAccessCards(userId, accessMap) {
         <span class="access-card-icon">${info.icon}</span>
         <span class="access-card-name">${info.name}</span>
       </div>
-      <div class="access-toggle" onclick="toggleAccess('${userId}','${cid}',this)">
+      <div class="access-toggle" onclick="toggleAccess('${userId}','${cid}')">
         <span class="access-status ${granted?'paid':'free'}" id="acc-status-${userId}-${cid}">${granted?'✅ Access Granted':'⛔ Locked'}</span>
-        <div class="toggle-track ${granted?'on':''}" id="acc-toggle-${userId}-${cid}">
-          <div class="toggle-thumb"></div>
-        </div>
+        <div class="toggle-track ${granted?'on':''}" id="acc-toggle-${userId}-${cid}"><div class="toggle-thumb"></div></div>
       </div>
       <div style="font-family:var(--fmono);font-size:.68rem;color:var(--txtd)">${info.tier} · KES ${info.price.toLocaleString()}</div>
     </div>`;
   }).join('');
 }
-
 function toggleAccess(userId, courseId) {
-  const track  = document.getElementById(`acc-toggle-${userId}-${courseId}`);
+  const track = document.getElementById(`acc-toggle-${userId}-${courseId}`);
   const status = document.getElementById(`acc-status-${userId}-${courseId}`);
-  const isOn   = track.classList.contains('on');
+  const isOn = track.classList.contains('on');
   track.classList.toggle('on', !isOn);
-  status.textContent  = isOn ? '⛔ Locked' : '✅ Access Granted';
-  status.className    = 'access-status ' + (isOn ? 'free' : 'paid');
+  status.textContent = isOn ? '⛔ Locked' : '✅ Access Granted';
+  status.className   = 'access-status ' + (isOn ? 'free' : 'paid');
   if (!pendingAccess[userId]) pendingAccess[userId] = {};
   pendingAccess[userId][courseId] = !isOn;
 }
-
 async function saveAccess(userId) {
-  const saving  = document.getElementById(`access-saving-${userId}`);
+  const saving = document.getElementById(`access-saving-${userId}`);
   const pending = pendingAccess[userId];
   if (!pending || !Object.keys(pending).length) {
     saving.textContent = 'No changes to save.';
-    setTimeout(() => saving.textContent = '', 2000);
-    return;
+    setTimeout(() => saving.textContent = '', 2000); return;
   }
   saving.textContent = '⏳ Saving…';
   try {
-    const upserts = Object.entries(pending).map(([cid, granted]) => ({
-      user_id: userId, course_id: cid, granted, updated_at: new Date().toISOString(),
-    }));
-    const { error } = await sb.from('course_access').upsert(upserts, { onConflict: 'user_id,course_id' });
+    const { error } = await sb.from('course_access').upsert(
+      Object.entries(pending).map(([cid, granted]) => ({
+        user_id: userId, course_id: cid, granted, updated_at: new Date().toISOString(),
+      })), { onConflict: 'user_id,course_id' }
+    );
     if (error) throw error;
     pendingAccess[userId] = {};
     saving.textContent = '✅ Access saved!';
     setTimeout(() => saving.textContent = '', 4000);
-    await loadAllStudents();
-  } catch(err) {
-    saving.textContent = '❌ ' + err.message;
-  }
+    const { data: authData } = await sb.auth.getUser();
+    await loadAllStudents(authData?.user?.id || null);
+  } catch(err) { saving.textContent = '❌ ' + err.message; }
 }
-
 async function grantAllAccess(userId, event) {
   event.stopPropagation();
   const { error } = await sb.from('course_access').upsert(
     Object.keys(COURSE_INFO).map(cid => ({
       user_id: userId, course_id: cid, granted: true, updated_at: new Date().toISOString(),
-    })),
-    { onConflict: 'user_id,course_id' }
+    })), { onConflict: 'user_id,course_id' }
   );
   showGrantToast(error ? '❌ ' + error.message : '✅ Full access granted!');
-  if (!error) await loadAllStudents();
+  if (!error) { const { data: a } = await sb.auth.getUser(); await loadAllStudents(a?.user?.id||null); }
 }
-
 function showGrantToast(msg) {
   const t = document.createElement('div');
   t.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff;padding:12px 28px;border-radius:100px;font-family:"JetBrains Mono",monospace;font-size:.84rem;font-weight:700;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.4)';
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EXPORT
-// ═══════════════════════════════════════════════════════════════
+// ── EXPORT ───────────────────────────────────────────────────────
 function exportCSV() {
-  const rows = [['Name','Email','Enrolled','Last Active','Overall %','Status',
-    ...Object.values(COURSES).map(c => c.name + ' %')]];
-  filtered.forEach(s => {
-    rows.push([
-      s.name, s.email,
-      s.enrolled ? new Date(s.enrolled).toLocaleDateString() : '',
-      s.lastActive ? new Date(s.lastActive).toLocaleDateString() : 'Never',
-      s.overallPct, s.status,
-      ...Object.keys(COURSES).map(cid => s.courses[cid].pct),
-    ]);
-  });
-  downloadCSV(rows, 'fmm-students.csv');
+  const rows = [['Name','Email','Enrolled','Last Active','Overall %','Status',...Object.values(COURSES).map(c=>c.name+' %')]];
+  filtered.forEach(s => rows.push([s.name,s.email,s.enrolled?new Date(s.enrolled).toLocaleDateString():'',s.lastActive?new Date(s.lastActive).toLocaleDateString():'Never',s.overallPct,s.status,...Object.keys(COURSES).map(cid=>s.courses[cid].pct)]));
+  downloadCSV(rows,'fmm-students.csv');
 }
-
 function exportStudentCSV(userId) {
-  const s = allStudents.find(x => x.id === userId);
-  if (!s) return;
+  const s = allStudents.find(x=>x.id===userId); if(!s) return;
   const rows = [['Course','Lessons Done','Total','Percentage']];
-  Object.entries(COURSES).forEach(([cid,info]) => {
-    const cv = s.courses[cid];
-    rows.push([info.name, cv.done, cv.total, cv.pct + '%']);
-  });
-  downloadCSV(rows, `${s.name.replace(/\s+/g,'-').toLowerCase()}-progress.csv`);
+  Object.entries(COURSES).forEach(([cid,info]) => { const cv=s.courses[cid]; rows.push([info.name,cv.done,cv.total,cv.pct+'%']); });
+  downloadCSV(rows,`${s.name.replace(/\s+/g,'-').toLowerCase()}-progress.csv`);
 }
-
 function downloadCSV(rows, filename) {
-  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = filename; a.click();
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download=filename; a.click();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════════
+// ── UTILS ────────────────────────────────────────────────────────
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function setStatus(msg) { const el = document.getElementById('sub-text'); if(el) el.textContent = msg; }
+function setStatus(msg) { const el=document.getElementById('sub-text'); if(el) el.textContent=msg; }
 function setSpinner() {
-  document.getElementById('student-tbody').innerHTML =
-    '<tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr>';
-  setStatus('Loading…');
+  document.getElementById('student-tbody').innerHTML='<tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr>';
+  setStatus('Loading student data…');
 }
-
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer(); });
 </script>
 </body>
 </html>
