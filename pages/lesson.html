@@ -642,15 +642,7 @@ class Quiz{
 let FQ=null;
 function initQuiz(qs,id='qbox'){FQ=new Quiz(qs,id);}
 
-function fmmComplete(){
-  const pp=new URLSearchParams(location.search);
-  const cid=pp.get('course')||'web-dev',mid=pp.get('mod')||'m1',lid=pp.get('lesson')||'l1';
-  const v=markDone(cid,mid,lid);renderProgress();updateLsbPct(cid);
-  const t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:32px;right:32px;background:linear-gradient(135deg,#1557e8,#2979ff);color:#fff;padding:14px 24px;border-radius:100px;font-weight:700;font-family:"JetBrains Mono",monospace;font-size:.84rem;box-shadow:0 8px 32px rgba(41,121,255,.5);z-index:9999';
-  t.textContent='✅ Lesson complete! Course: '+v+'%';
-  document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
-}
+// fmmComplete is defined in the Lesson System block below
 
 function initAccordion(){
   document.querySelectorAll('.mt').forEach(t=>{
@@ -710,7 +702,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   initSB();initNav();initReveal();initCounters();renderProgress();
   const pg=document.body.dataset.pg;
   if(pg==='dash')initDash();
-  if(pg==='lesson')initAccordion();
+  // accordion is wired by buildSidebar() in the lesson system below
   if(pg==='reg')initPwdStr();
   document.getElementById('login-form')?.addEventListener('submit',doLogin);
   document.getElementById('reg-form')?.addEventListener('submit',doRegister);
@@ -2883,52 +2875,56 @@ function copyText(text, el) {
   });
 }
 
-// Intercept renderLesson — check paywall before rendering
-const _origRenderLesson = renderLesson;
-function renderLesson(idx) {
-  if (isPaywalled(CC, idx)) {
-    // Still update sidebar highlight and scroll position
-    const cur = getCur();
-    const [mod, lid] = cur[idx];
-    document.querySelectorAll('.lr').forEach(r => r.classList.remove('on'));
-    const row = document.querySelector(`.lr[data-mod="${mod}"][data-lid="${lid}"]`);
-    if (row) row.classList.add('on');
-    showPaywall(CC);
-    return;
-  }
-  // Close paywall if open
-  document.querySelector('.paywall-overlay')?.remove();
-  _origRenderLesson(idx);
-}
-
-// Intercept loadLesson too
-const _origLoadLesson = loadLesson;
-function loadLesson(mod, lid) {
-  const cur = getCur();
-  const idx = cur.findIndex(l => l[0] === mod && l[1] === lid);
-  if (idx !== -1 && isPaywalled(CC, idx)) {
-    showPaywall(CC); return;
-  }
-  _origLoadLesson(mod, lid);
-}
-
-// Patch sidebar to show lock icon on paywalled lessons
-const _origBuildSidebar = buildSidebar;
-function buildSidebar() {
-  _origBuildSidebar();
-  const cur = getCur();
-  cur.forEach((lesson, idx) => {
+// ── PAYWALL INTERCEPTS ────────────────────────────────────────────
+// Wrap renderLesson, loadLesson and buildSidebar with paywall checks.
+// We use a self-executing block so the originals are captured AFTER
+// all function declarations are hoisted — preventing infinite recursion.
+(function patchPaywall() {
+  // --- renderLesson ---
+  const _origRender = renderLesson;
+  renderLesson = function(idx) {
     if (isPaywalled(CC, idx)) {
-      const [mod, lid] = lesson;
+      const cur = getCur();
+      const [mod, lid] = cur[idx];
+      document.querySelectorAll('.lr').forEach(r => r.classList.remove('on'));
       const row = document.querySelector(`.lr[data-mod="${mod}"][data-lid="${lid}"]`);
-      if (row) {
-        row.classList.add('lr-locked');
-        const dot = row.querySelector('.ld');
-        if (dot && dot.textContent !== '✓') dot.textContent = '💰';
-      }
+      if (row) row.classList.add('on');
+      showPaywall(CC);
+      return;
     }
-  });
-}
+    document.querySelector('.paywall-overlay')?.remove();
+    _origRender(idx);
+  };
+
+  // --- loadLesson ---
+  const _origLoad = loadLesson;
+  loadLesson = function(mod, lid) {
+    const cur = getCur();
+    const idx = cur.findIndex(l => l[0] === mod && l[1] === lid);
+    if (idx !== -1 && isPaywalled(CC, idx)) {
+      showPaywall(CC); return;
+    }
+    _origLoad(mod, lid);
+  };
+
+  // --- buildSidebar ---
+  const _origBuild = buildSidebar;
+  buildSidebar = function() {
+    _origBuild();
+    const cur = getCur();
+    cur.forEach((lesson, idx) => {
+      if (isPaywalled(CC, idx)) {
+        const [mod, lid] = lesson;
+        const row = document.querySelector(`.lr[data-mod="${mod}"][data-lid="${lid}"]`);
+        if (row) {
+          row.classList.add('lr-locked');
+          const dot = row.querySelector('.ld');
+          if (dot && dot.textContent !== '✓') dot.textContent = '💰';
+        }
+      }
+    });
+  };
+})();
 
 </script>
 </body></html>
