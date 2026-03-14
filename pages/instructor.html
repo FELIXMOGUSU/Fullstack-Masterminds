@@ -462,7 +462,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  // Auth guard — safe destructuring with error handling
+  // FIX 1: Safe auth — unsafe destructuring crashes silently on any error
   let user = null;
   try {
     const { data, error } = await sb.auth.getUser();
@@ -472,15 +472,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('sub-text').textContent = '⚠️ Auth error: ' + e.message;
     return;
   }
-
   if (!user) { location.href = 'login.html'; return; }
 
-  // Role check — handle missing row (PGRST116) separately from real errors
+  // FIX 2: Role check — PGRST116 means no row yet (new account), not a DB error
   const { data: profile, error: profileErr } = await sb
     .from('profiles').select('role,full_name').eq('id', user.id).single();
 
   if (profileErr && profileErr.code !== 'PGRST116') {
-    document.getElementById('sub-text').textContent = '⚠️ Could not verify role: ' + profileErr.message;
+    document.getElementById('sub-text').textContent = '⚠️ Role check failed: ' + profileErr.message;
     return;
   }
 
@@ -504,22 +503,28 @@ async function loadAllStudents() {
     '<tr class="loading-row"><td colspan="7"><div class="spinner"></div></td></tr>';
 
   try {
-    // BUG FIX: Fetch ALL profiles — chained .neq() excluded students whose
-    // role column is NULL (most students never have a role set).
-    // We filter out instructors/admins in JS instead.
+    // FIX 3: THE MAIN BUG — chained .neq('role','instructor').neq('role','admin')
+    // translates to SQL: WHERE role != 'instructor' AND role != 'admin'
+    // In SQL, NULL != 'anything' evaluates to NULL (not TRUE), so every student
+    // whose role column is NULL (i.e. most students) gets EXCLUDED.
+    // Fix: fetch ALL profiles, filter instructors out in JavaScript.
     const [profilesRes, progressRes] = await Promise.all([
       sb.from('profiles').select('id,full_name,email,created_at,role'),
       sb.from('user_progress_summary').select('user_id,progress_data,updated_at'),
     ]);
 
-    // Surface any DB errors immediately rather than silently using empty arrays
-    if (profilesRes.error) throw new Error('Profiles: ' + profilesRes.error.message);
-    if (progressRes.error) throw new Error('Progress: ' + progressRes.error.message);
+    // FIX 4: Surface DB errors — original silently fell back to [] hiding all failures
+    if (profilesRes.error) throw new Error('profiles table: ' + profilesRes.error.message);
+    if (progressRes.error) throw new Error('user_progress_summary table: ' + progressRes.error.message);
 
+    // Filter out instructors/admins in JS (handles NULL roles correctly)
     const profiles = (profilesRes.data || []).filter(
-      p => !['instructor','admin'].includes(p.role)
+      p => !['instructor', 'admin'].includes(p.role)
     );
     const progress = progressRes.data || [];
+
+    console.log(`[FMM] profiles fetched: ${profilesRes.data?.length}, after filter: ${profiles.length}`);
+    console.log(`[FMM] progress rows: ${progress.length}`);
 
     // Map progress by user_id
     const progMap = {};
@@ -930,8 +935,6 @@ async function saveAccess(userId) {
     pendingAccess[userId] = {};
     saving.textContent = '✅ Access saved! Student can now proceed.';
     setTimeout(() => saving.textContent = '', 4000);
-
-    // Refresh stats
     await loadAllStudents();
   } catch(err) {
     saving.textContent = '❌ Error: ' + err.message;
