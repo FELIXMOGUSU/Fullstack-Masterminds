@@ -3,21 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Payment Settings — FMM</title>
+<title>Payment Details — FMM Academy</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg0:#020818;--bg1:#060e24;--bg2:#0b1535;--bg3:#0f1c42;
+  --bg0:#020818;--bg1:#060e24;--bg2:#0b1535;
   --blue:#2979ff;--blueu:#00c3ff;
   --txt:#c8daf5;--txtm:#7a9cc8;--txtd:#3a5a8a;
-  --ok:#00e676;--warn:#ffab40;--danger:#ff5252;
+  --ok:#00e676;--warn:#ffab40;
   --fhead:'Bebas Neue',sans-serif;--fbody:'Outfit',sans-serif;--fmono:'JetBrains Mono',monospace;
   --r:10px;
 }
 html{background:var(--bg0);color:var(--txt);font-family:var(--fbody);font-size:16px}
 body{min-height:100vh;display:flex;flex-direction:column}
 
+/* ── TOPBAR ── */
 .topbar{
   position:sticky;top:0;z-index:100;
   background:rgba(2,8,24,.95);border-bottom:1px solid rgba(41,121,255,.15);
@@ -29,95 +30,77 @@ body{min-height:100vh;display:flex;flex-direction:column}
 .logo span{color:var(--blue)}
 .badge{background:rgba(41,121,255,.15);border:1px solid rgba(41,121,255,.3);color:var(--blue);font-family:var(--fmono);font-size:.72rem;padding:4px 12px;border-radius:100px}
 .topbar-right{display:flex;align-items:center;gap:12px}
-.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--fbody);font-size:.88rem;font-weight:600;padding:9px 20px;border-radius:8px;border:none;cursor:pointer;transition:all .2s;text-decoration:none}
-.btn-ghost{background:transparent;border:1px solid rgba(41,121,255,.3);color:var(--txtm)}
+.btn-ghost{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--fbody);font-size:.88rem;font-weight:600;
+  padding:9px 20px;border-radius:8px;
+  background:transparent;border:1px solid rgba(41,121,255,.3);
+  color:var(--txtm);cursor:pointer;transition:all .2s;text-decoration:none;
+}
 .btn-ghost:hover{border-color:var(--blue);color:var(--txt)}
-.btn-primary{background:var(--blue);color:#fff}
-.btn-primary:hover{background:#1565c0;transform:translateY(-1px)}
-.btn-danger{background:rgba(255,82,82,.1);border:1px solid rgba(255,82,82,.3);color:var(--danger)}
 
-main{flex:1;padding:48px 32px;max-width:960px;margin:0 auto;width:100%}
+/* ── MAIN ── */
+main{flex:1;padding:48px 32px;max-width:860px;margin:0 auto;width:100%}
+
 .page-header{margin-bottom:44px}
 .page-header h1{font-family:var(--fhead);font-size:2.8rem;color:#fff;letter-spacing:.06em}
-.page-header p{color:var(--txtm);margin-top:8px;font-size:.93rem}
+.page-header p{color:var(--txtm);margin-top:8px;font-size:.93rem;line-height:1.6}
 
-.section{background:var(--bg1);border:1px solid rgba(41,121,255,.12);border-radius:var(--r);overflow:hidden;margin-bottom:28px}
-.section-head{
-  padding:20px 28px;border-bottom:1px solid rgba(41,121,255,.1);
+/* ── INFO CARD ── */
+.card{
+  background:var(--bg1);border:1px solid rgba(41,121,255,.15);
+  border-radius:var(--r);overflow:hidden;margin-bottom:24px;
+}
+.card-head{
+  padding:18px 28px;border-bottom:1px solid rgba(41,121,255,.1);
   display:flex;align-items:center;gap:14px;
 }
-.section-icon{
-  width:40px;height:40px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;
+.card-icon{
+  width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;
 }
-.sec-mpesa .section-icon{background:rgba(0,230,118,.1)}
-.sec-bank  .section-icon{background:rgba(41,121,255,.1)}
-.sec-pricing .section-icon{background:rgba(255,171,64,.1)}
-.sec-contact .section-icon{background:rgba(0,195,255,.1)}
-.section-title-wrap h2{font-family:var(--fhead);font-size:1.2rem;color:#fff;letter-spacing:.05em}
-.section-title-wrap p{font-size:.82rem;color:var(--txtm);margin-top:2px}
+.card-mpesa   .card-icon{background:rgba(0,230,118,.1)}
+.card-bank    .card-icon{background:rgba(41,121,255,.1)}
+.card-contact .card-icon{background:rgba(0,195,255,.1)}
+.card-pricing .card-icon{background:rgba(255,171,64,.1)}
+.card-head h2{font-family:var(--fhead);font-size:1.2rem;color:#fff;letter-spacing:.05em}
+.card-head p{font-size:.82rem;color:var(--txtm);margin-top:2px}
 
-.section-body{padding:28px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.form-group{display:flex;flex-direction:column;gap:6px}
-.form-group.full{grid-column:1/-1}
-label{font-family:var(--fmono);font-size:.72rem;color:var(--txtm);letter-spacing:.08em;text-transform:uppercase}
-input,select,textarea{
-  background:var(--bg2);border:1px solid rgba(41,121,255,.18);
-  color:var(--txt);font-family:var(--fbody);font-size:.9rem;
-  padding:11px 14px;border-radius:8px;transition:border-color .2s;
+.info-table{width:100%;border-collapse:collapse}
+.info-table tr{border-bottom:1px solid rgba(41,121,255,.07)}
+.info-table tr:last-child{border-bottom:none}
+.info-table td{padding:16px 28px;vertical-align:middle}
+.info-table td:first-child{
+  font-family:var(--fmono);font-size:.72rem;color:var(--txtm);
+  letter-spacing:.1em;text-transform:uppercase;width:200px;
 }
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);background:var(--bg3)}
-input::placeholder,textarea::placeholder{color:var(--txtd)}
-.hint{font-size:.75rem;color:var(--txtd);margin-top:3px}
-.preview-box{
-  background:var(--bg2);border:1px solid rgba(0,195,255,.2);
-  border-radius:10px;padding:20px 22px;margin-top:20px;
-}
-.preview-box h4{font-family:var(--fmono);font-size:.72rem;color:var(--blueu);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
-.preview-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(41,121,255,.08)}
-.preview-row:last-child{border-bottom:none}
-.preview-label{font-size:.82rem;color:var(--txtm);font-family:var(--fmono)}
-.preview-val{font-size:.9rem;color:var(--txt);font-weight:600}
+.info-table td:last-child{font-size:.97rem;color:#fff;font-weight:600}
 
-.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+/* ── PRICING GRID ── */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:28px}
 .price-card{
   background:var(--bg2);border:1px solid rgba(41,121,255,.12);
-  border-radius:var(--r);padding:20px;
+  border-radius:var(--r);padding:22px 20px;text-align:center;
 }
-.price-card-name{font-family:var(--fmono);font-size:.72rem;color:var(--txtm);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
-.price-card-courses{font-size:.78rem;color:var(--txtd);margin-bottom:14px;line-height:1.5}
-.price-input-wrap{position:relative}
-.price-input-wrap span{
-  position:absolute;left:12px;top:50%;transform:translateY(-50%);
-  font-family:var(--fmono);font-size:.8rem;color:var(--txtm);
-}
-.price-input-wrap input{padding-left:46px}
+.price-tier{font-family:var(--fmono);font-size:.72rem;color:var(--txtm);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.price-courses{font-size:.8rem;color:var(--txtd);line-height:1.55;margin-bottom:16px;min-height:36px}
+.price-amount{font-family:var(--fhead);font-size:2.2rem;letter-spacing:.04em;color:var(--warn);line-height:1}
+.price-currency{font-family:var(--fmono);font-size:.75rem;color:var(--txtm);margin-top:4px;letter-spacing:.08em}
 
-.save-bar{
-  display:flex;align-items:center;gap:16px;
-  padding:20px 28px;border-top:1px solid rgba(41,121,255,.1);
-  background:var(--bg2);
+.paywall-note{
+  margin:0 28px 28px;
+  background:rgba(255,171,64,.06);border:1px solid rgba(255,171,64,.2);
+  border-radius:8px;padding:14px 18px;
+  font-size:.83rem;color:var(--txtm);line-height:1.6;
 }
-.save-status{font-family:var(--fmono);font-size:.8rem;color:var(--txtd)}
-.save-status.ok{color:var(--ok)}
-.save-status.saving{color:var(--warn)}
-
-.toast{
-  position:fixed;bottom:32px;right:32px;
-  background:linear-gradient(135deg,#1557e8,#2979ff);color:#fff;
-  padding:14px 26px;border-radius:100px;font-weight:700;
-  font-family:var(--fmono);font-size:.84rem;
-  box-shadow:0 8px 32px rgba(41,121,255,.5);z-index:9999;
-}
-.toast.error{background:linear-gradient(135deg,#c62828,#e53935);box-shadow:0 8px 32px rgba(229,57,53,.5)}
+.paywall-note strong{color:var(--warn)}
 
 @media(max-width:700px){
   main{padding:24px 16px}
   .topbar{padding:0 16px}
-  .form-grid{grid-template-columns:1fr}
   .pricing-grid{grid-template-columns:1fr}
-  .section-body{padding:20px}
+  .info-table td{padding:14px 20px}
+  .info-table td:first-child{width:140px}
 }
 </style>
 </head>
@@ -126,344 +109,115 @@ input::placeholder,textarea::placeholder{color:var(--txtd)}
 <header class="topbar">
   <div class="logo">FMM <span>/</span> ACADEMY</div>
   <div class="topbar-right">
-    <span class="badge">PAYMENT SETTINGS</span>
-    <a href="instructor.html" class="btn btn-ghost">← Dashboard</a>
+    <span class="badge">PAYMENT DETAILS</span>
+    <a href="instructor.html" class="btn-ghost">← Dashboard</a>
   </div>
 </header>
 
 <main>
   <div class="page-header">
-    <h1>PAYMENT SETTINGS</h1>
-    <p>Configure how students pay for course access. These details appear on the paywall screen all students see.</p>
+    <h1>PAYMENT DETAILS</h1>
+    <p>These are the payment details students see when they reach the course paywall. Details are fixed below — no changes needed.</p>
   </div>
 
-  <!-- M-PESA SECTION -->
-  <div class="section sec-mpesa">
-    <div class="section-head">
-      <div class="section-icon">📱</div>
-      <div class="section-title-wrap">
-        <h2>M-PESA DETAILS</h2>
-        <p>Students will see these details on the payment screen and can tap to copy the number</p>
+  <!-- M-PESA -->
+  <div class="card card-mpesa">
+    <div class="card-head">
+      <div class="card-icon">📱</div>
+      <div>
+        <h2>M-PESA</h2>
+        <p>Students send payment to this number and confirm with their email</p>
       </div>
     </div>
-    <div class="section-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>M-Pesa Number</label>
-          <input type="tel" id="mpesa_number" placeholder="e.g. 0712345678" maxlength="15">
-          <div class="hint">The phone number students send money to</div>
-        </div>
-        <div class="form-group">
-          <label>Account Name (as on M-Pesa)</label>
-          <input type="text" id="mpesa_name" placeholder="e.g. Felix Mogusu">
-          <div class="hint">Shown so students can confirm they're sending to the right person</div>
-        </div>
-      </div>
-      <div class="preview-box">
-        <h4>👁 Preview — what students will see</h4>
-        <div class="preview-row">
-          <span class="preview-label">M-PESA NUMBER</span>
-          <span class="preview-val" id="prev-mpesa">—</span>
-        </div>
-        <div class="preview-row">
-          <span class="preview-label">ACCOUNT NAME</span>
-          <span class="preview-val" id="prev-mpesa-name">—</span>
-        </div>
-      </div>
-    </div>
+    <table class="info-table">
+      <tr>
+        <td>M-Pesa Name</td>
+        <td>Felix Mogusu Makendo</td>
+      </tr>
+      <tr>
+        <td>M-Pesa Number</td>
+        <td>0710 792 239</td>
+      </tr>
+    </table>
   </div>
 
-  <!-- BANK SECTION -->
-  <div class="section sec-bank">
-    <div class="section-head">
-      <div class="section-icon">🏦</div>
-      <div class="section-title-wrap">
-        <h2>BANK ACCOUNT DETAILS</h2>
-        <p>Optional — shown alongside M-Pesa for students who prefer bank transfer</p>
+  <!-- BANK -->
+  <div class="card card-bank">
+    <div class="card-head">
+      <div class="card-icon">🏦</div>
+      <div>
+        <h2>BANK ACCOUNT</h2>
+        <p>Alternative payment via bank transfer</p>
       </div>
     </div>
-    <div class="section-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Bank Name</label>
-          <input type="text" id="bank_name" placeholder="e.g. Equity Bank Kenya">
-        </div>
-        <div class="form-group">
-          <label>Account Number</label>
-          <input type="text" id="bank_account" placeholder="e.g. 0123456789012">
-          <div class="hint">Students can tap to copy this</div>
-        </div>
-        <div class="form-group">
-          <label>Account Holder Name</label>
-          <input type="text" id="bank_holder" placeholder="e.g. Fullstack Masterminds Ltd">
-        </div>
-        <div class="form-group">
-          <label>Branch</label>
-          <input type="text" id="bank_branch" placeholder="e.g. Nairobi CBD Branch">
-        </div>
-        <div class="form-group">
-          <label>Branch Code / Sort Code</label>
-          <input type="text" id="bank_code" placeholder="e.g. 068 — 017">
-        </div>
-        <div class="form-group">
-          <label>Swift Code (for international)</label>
-          <input type="text" id="bank_swift" placeholder="e.g. EQBLKENA">
-        </div>
-      </div>
-    </div>
+    <table class="info-table">
+      <tr>
+        <td>Bank Name</td>
+        <td>Equity Bank Kenya</td>
+      </tr>
+      <tr>
+        <td>Account Number</td>
+        <td>7770182738504</td>
+      </tr>
+    </table>
   </div>
 
-  <!-- CONTACT SECTION -->
-  <div class="section sec-contact">
-    <div class="section-head">
-      <div class="section-icon">📧</div>
-      <div class="section-title-wrap">
-        <h2>CONTACT & CONFIRMATION</h2>
-        <p>Where students send their payment proof after paying</p>
+  <!-- CONTACT -->
+  <div class="card card-contact">
+    <div class="card-head">
+      <div class="card-icon">📧</div>
+      <div>
+        <h2>CONTACT &amp; CONFIRMATION</h2>
+        <p>Students send their M-Pesa confirmation code here to get access unlocked</p>
       </div>
     </div>
-    <div class="section-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Contact Email</label>
-          <input type="email" id="contact_email" placeholder="e.g. felix@fmm.co.ke">
-          <div class="hint">Students send M-Pesa confirmation code + their email here</div>
-        </div>
-        <div class="form-group">
-          <label>WhatsApp Number (optional)</label>
-          <input type="tel" id="contact_whatsapp" placeholder="e.g. +254712345678">
-          <div class="hint">Alternative payment confirmation channel</div>
-        </div>
-        <div class="form-group full">
-          <label>Custom Payment Instructions (optional)</label>
-          <textarea id="custom_instructions" rows="3" placeholder="e.g. Include your registered email in the M-Pesa message. Access will be granted within 2 hours during business days."></textarea>
-          <div class="hint">Shown below the payment steps. Leave blank to use default text.</div>
-        </div>
-      </div>
-    </div>
+    <table class="info-table">
+      <tr>
+        <td>Email</td>
+        <td>felixmogusu@gmail.com</td>
+      </tr>
+      <tr>
+        <td>Phone / WhatsApp</td>
+        <td>0710 792 239</td>
+      </tr>
+    </table>
   </div>
 
-  <!-- PRICING SECTION -->
-  <div class="section sec-pricing">
-    <div class="section-head">
-      <div class="section-icon">💰</div>
-      <div class="section-title-wrap">
+  <!-- PRICING -->
+  <div class="card card-pricing">
+    <div class="card-head">
+      <div class="card-icon">💰</div>
+      <div>
         <h2>COURSE PRICING</h2>
-        <p>Prices shown to students when they reach the paywall at 50% completion</p>
+        <p>Prices shown to students when they hit the paywall at 50% completion</p>
       </div>
     </div>
-    <div class="section-body">
-      <div class="pricing-grid">
-        <div class="price-card">
-          <div class="price-card-name">🌱 Beginner</div>
-          <div class="price-card-courses">Hosting & Maintenance</div>
-          <div class="price-input-wrap">
-            <span>KES</span>
-            <input type="number" id="price_beginner" value="3000" min="0" step="500">
-          </div>
-        </div>
-        <div class="price-card">
-          <div class="price-card-name">⚡ Intermediate</div>
-          <div class="price-card-courses">WordPress Design<br>SEO Mastery</div>
-          <div class="price-input-wrap">
-            <span>KES</span>
-            <input type="number" id="price_intermediate" value="5000" min="0" step="500">
-          </div>
-        </div>
-        <div class="price-card">
-          <div class="price-card-name">🚀 Advanced</div>
-          <div class="price-card-courses">Website Development<br>E-Commerce Mastery</div>
-          <div class="price-input-wrap">
-            <span>KES</span>
-            <input type="number" id="price_advanced" value="10000" min="0" step="500">
-          </div>
-        </div>
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="price-tier">🌱 Beginner</div>
+        <div class="price-courses">Hosting &amp; Maintenance</div>
+        <div class="price-amount">3,000</div>
+        <div class="price-currency">KES</div>
       </div>
-      <div class="hint" style="margin-top:14px">💡 Paywall triggers when a student reaches 50% of any course. Free preview covers the first half.</div>
+      <div class="price-card">
+        <div class="price-tier">⚡ Intermediate</div>
+        <div class="price-courses">WordPress Design<br>SEO Mastery</div>
+        <div class="price-amount">5,000</div>
+        <div class="price-currency">KES</div>
+      </div>
+      <div class="price-card">
+        <div class="price-tier">🚀 Advanced</div>
+        <div class="price-courses">Website Development<br>E-Commerce Mastery</div>
+        <div class="price-amount">10,000</div>
+        <div class="price-currency">KES</div>
+      </div>
     </div>
-    <div class="save-bar">
-      <button class="btn btn-primary" onclick="saveSettings()">💾 Save All Settings</button>
-      <span class="save-status" id="save-status">All changes saved automatically</span>
+    <div class="paywall-note">
+      💡 The paywall activates when a student reaches <strong>50% of any course</strong>. The first half is always free. Once payment is confirmed, grant access manually from the instructor panel.
     </div>
   </div>
 
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-const SB_URL = 'https://dtawdhstvcklwyngatwa.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0YXdkaHN0dmNrbHd5bmdhdHdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMDY2OTMsImV4cCI6MjA4ODg4MjY5M30.VHFPpU3MkBOBBoJtCk4c_27CmnhIHkYZpPMc2AefqbA';
-
-// FIX 1: sb declared at module scope so saveSettings() can access it.
-// Previously it was declared with let sb; but createClient was only called
-// inside loadSettings() — if loadSettings hadn't finished before saveSettings()
-// ran (e.g. user clicked Save quickly), sb was undefined and crashed.
-let sb = null;
-
-// ── LIVE PREVIEW ─────────────────────────────────────────────────────
-// FIX 2: These listeners were attached BEFORE DOMContentLoaded, so the
-// elements didn't exist yet and addEventListener was never bound.
-// Moved inside DOMContentLoaded below.
-
-function updatePreview() {
-  const num  = document.getElementById('mpesa_number').value || '—';
-  const name = document.getElementById('mpesa_name').value   || '—';
-  document.getElementById('prev-mpesa').textContent      = num;
-  document.getElementById('prev-mpesa-name').textContent = name;
-}
-
-// ── LOAD SETTINGS FROM SUPABASE ──────────────────────────────────────
-async function loadSettings() {
-  // FIX 3: The original code crashed if window.supabase wasn't ready yet
-  // (race condition — script may not be fully loaded). Guard added.
-  if (!window.supabase) {
-    showToast('❌ Supabase SDK failed to load. Check your internet connection.', true);
-    return;
-  }
-
-  // FIX 4: createClient called once here, stored in the shared sb variable.
-  sb = window.supabase.createClient(SB_URL, SB_KEY);
-
-  // FIX 5: Original code did destructuring `{ data: { user } }` with NO
-  // error handling — if the auth call fails (network error, expired token)
-  // this throws an uncaught TypeError and the whole page breaks silently.
-  let user = null;
-  try {
-    const { data, error } = await sb.auth.getUser();
-    if (error) throw error;
-    user = data.user;
-  } catch (e) {
-    showToast('❌ Auth error: ' + e.message, true);
-    return;
-  }
-
-  if (!user) { location.href = 'login.html'; return; }
-
-  // FIX 6: Role check used profiles table — if that table doesn't exist or
-  // RLS blocks the query, it silently returned null and locked out the instructor.
-  // Added explicit error handling and a fallback so a missing profiles row
-  // doesn't permanently block the page.
-  const { data: profile, error: profileErr } = await sb
-    .from('profiles').select('role').eq('id', user.id).single();
-
-  if (profileErr && profileErr.code !== 'PGRST116') {
-    // PGRST116 = "no rows found" — any other error is a real DB problem
-    showToast('⚠️ Could not verify role: ' + profileErr.message, true);
-    return;
-  }
-
-  if (!profile || !['instructor', 'admin'].includes(profile.role)) {
-    document.querySelector('main').innerHTML =
-      '<div style="text-align:center;padding:80px;color:#ff5252;font-family:var(--fhead);font-size:2rem">🔒 ACCESS RESTRICTED</div>';
-    return;
-  }
-
-  // ── Fetch existing settings ──────────────────────────────────────
-  // FIX 7: Original had no error handling here — if the row doesn't exist
-  // yet (first time setup), .single() throws PGRST116 and nothing loads.
-  const { data, error: fetchErr } = await sb
-    .from('payment_settings').select('*').eq('id', 1).single();
-
-  if (fetchErr && fetchErr.code !== 'PGRST116') {
-    showToast('⚠️ Could not load settings: ' + fetchErr.message, true);
-    return;
-  }
-
-  if (data) {
-    // Map every DB column directly to its matching input id
-    const fields = [
-      'mpesa_number','mpesa_name',
-      'bank_name','bank_account','bank_holder','bank_branch','bank_code','bank_swift',
-      'contact_email','contact_whatsapp','custom_instructions',
-      'price_beginner','price_intermediate','price_advanced',
-    ];
-    fields.forEach(key => {
-      const el = document.getElementById(key);
-      if (el && data[key] != null) el.value = data[key];
-    });
-    updatePreview();
-  }
-  // If no row yet — that's fine, the form is blank and Save will create it.
-}
-
-// ── SAVE SETTINGS TO SUPABASE ────────────────────────────────────────
-async function saveSettings() {
-  // FIX 8: Original had no guard — if sb was null (loadSettings hadn't
-  // finished or failed), calling sb.from(...) threw "Cannot read properties
-  // of null" and the error was swallowed, leaving the user with a spinning
-  // status and no feedback.
-  if (!sb) {
-    showToast('❌ Not connected to database. Please refresh the page.', true);
-    return;
-  }
-
-  const status = document.getElementById('save-status');
-  status.textContent = '⏳ Saving…';
-  status.className = 'save-status saving';
-
-  // FIX 9: Wrap every getElementById in a helper that returns '' if the
-  // element is missing — prevents crashes if the DOM ever changes.
-  const val  = id => (document.getElementById(id)?.value  || '').trim();
-  const num  = (id, fallback) => parseInt(document.getElementById(id)?.value) || fallback;
-
-  const payload = {
-    id:                  1,
-    mpesa_number:        val('mpesa_number'),
-    mpesa_name:          val('mpesa_name'),
-    bank_name:           val('bank_name'),
-    bank_account:        val('bank_account'),
-    bank_holder:         val('bank_holder'),
-    bank_branch:         val('bank_branch'),
-    bank_code:           val('bank_code'),
-    bank_swift:          val('bank_swift'),
-    contact_email:       val('contact_email'),
-    contact_whatsapp:    val('contact_whatsapp'),
-    custom_instructions: val('custom_instructions'),
-    price_beginner:      num('price_beginner',    3000),
-    price_intermediate:  num('price_intermediate', 5000),
-    price_advanced:      num('price_advanced',    10000),
-    updated_at:          new Date().toISOString(),
-  };
-
-  // FIX 10: upsert needs to know which column is the primary key so it
-  // doesn't try to INSERT a duplicate id=1. Pass onConflict explicitly.
-  const { error } = await sb
-    .from('payment_settings')
-    .upsert(payload, { onConflict: 'id' });
-
-  if (error) {
-    status.textContent = '❌ Error: ' + error.message;
-    status.className = 'save-status';
-    showToast('❌ Failed to save: ' + error.message, true);
-  } else {
-    status.textContent = '✅ Saved successfully';
-    status.className = 'save-status ok';
-    showToast('✅ Payment settings saved!');
-    setTimeout(() => {
-      status.textContent = 'All changes saved';
-      status.className = 'save-status';
-    }, 4000);
-  }
-}
-
-// ── TOAST HELPER ─────────────────────────────────────────────────────
-function showToast(msg, err) {
-  document.querySelectorAll('.toast').forEach(t => t.remove());
-  const t = document.createElement('div');
-  t.className = 'toast' + (err ? ' error' : '');
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 4000);
-}
-
-// ── INIT ─────────────────────────────────────────────────────────────
-// FIX 2 (cont): Attach live-preview listeners here, after DOM is ready.
-window.addEventListener('DOMContentLoaded', () => {
-  ['mpesa_number', 'mpesa_name'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', updatePreview);
-  });
-  loadSettings();
-});
-</script>
 </body>
 </html>
