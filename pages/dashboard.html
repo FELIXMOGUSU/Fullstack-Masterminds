@@ -400,7 +400,7 @@ const TOTALS = {'web-dev':32,'wordpress':24,'seo':28,'hosting':20,'ecommerce':32
 let sb = null;
 
 function initSB(){
-  if(window.supabase && SB_URL !== 'https://dtawdhstvcklwyngatwa.supabase.co'){
+  if(window.supabase && SB_URL === 'https://dtawdhstvcklwyngatwa.supabase.co'){
     sb = window.supabase.createClient(SB_URL, SB_KEY);
     console.log('✅ Supabase connected');
   }
@@ -436,7 +436,7 @@ function initCounters(){
 
 function getP(){try{return JSON.parse(localStorage.getItem('fmm_p')||'{}');}catch{return {};}}
 function saveP(d){localStorage.setItem('fmm_p',JSON.stringify(d));syncP(d);}
-async function syncP(d){if(!sb)return;try{const{data:{user}}=await sb.auth.getUser();if(!user)return;await sb.from('user_progress_summary').upsert({user_id:user.id,progress_data:d,updated_at:new Date().toISOString()});}catch(e){}}
+async function syncP(d){if(!sb)return;try{const{data:{user}}=await sb.auth.getUser();if(!user)return;const meta=user.user_metadata||{};await sb.from('user_progress_summary').upsert({user_id:user.id,progress_data:d,full_name:meta.full_name||'',email:user.email||'',updated_at:new Date().toISOString()});}catch(e){}}
 async function loadP(){if(!sb)return;try{const{data:{user}}=await sb.auth.getUser();if(!user)return;const{data}=await sb.from('user_progress_summary').select('progress_data').eq('user_id',user.id).single();if(data?.progress_data)saveP(data.progress_data);}catch(e){}}
 
 function markDone(cid,mid,lid){const p=getP();if(!p[cid])p[cid]={};if(!p[cid][mid])p[cid][mid]=[];if(!p[cid][mid].includes(lid))p[cid][mid].push(lid);saveP(p);return getPct(cid);}

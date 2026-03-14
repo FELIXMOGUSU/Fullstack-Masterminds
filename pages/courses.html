@@ -424,7 +424,7 @@ const TOTALS = {'web-dev':32,'wordpress':24,'seo':28,'hosting':20,'ecommerce':32
 let sb = null;
 
 function initSB(){
-  if(window.supabase && SB_URL !== 'https://dtawdhstvcklwyngatwa.supabase.co'){
+  if(window.supabase && SB_URL === 'https://dtawdhstvcklwyngatwa.supabase.co'){
     sb = window.supabase.createClient(SB_URL, SB_KEY);
     console.log('✅ Supabase connected');
   }
